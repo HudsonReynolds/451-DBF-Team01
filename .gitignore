@@ -1,0 +1,32 @@
+# Autosave files
+*.asv
+*.m~
+*.autosave
+
+# Compiled MEX files
+*.mex*
+
+# Simulink and Code Generation
+*.slx.r*
+*.mdl.r*
+*.slxc
+slprj/
+sccprj/
+codegen/
+
+# Derived content-obscured files
+*.p
+
+# Packaged app and toolbox files
+*.mlappinstall
+*.mltbx
+
+# Deployable archives
+*.ctf
+
+# Generated help search folders
+helpsearch/**
+
+# Cloud storage dotfiles
+.MATLABDriveTag
+
