@@ -14,12 +14,13 @@ V_s = 10;     % [m⋅s⁻¹], stall speed
 AR = 6;       % [-], aspect ratio
 e = 0.7;      % [-], spanwise efficiency
 eta_p = 0.6;  % [-], propeller efficiency
-Cd0 = 0.04;   % [-], whole aircraft
+CD_0 = 0.04;   % [-], whole aircraft
 
 % environment quantities:
 rho = 1.225;  % [kg⋅m⁻³], air density
-mu = 0.4;     % [-] friction coeff of runway
+mu = 0.05;    % [-] friction coeff of runway (Sadraey)
 gamma = 5;    % [deg], flight path angle in climb
+g = 9.81;     % [m⋅s⁻²], gravitational constant
 
 %% First Constraint: Stall Speed
 % this determines the range of values to consider for W/S:
@@ -32,7 +33,7 @@ Phi = 0.75; % throttle setting
 
 V_c = 1.7*V_s;
 
-W_P_cruise = (eta_p*Phi / (0.5*1.1*Cd0*rho*V_c^3)) * W_S;
+W_P_cruise = (eta_p*Phi / (0.5*1.1*CD_0*rho*V_c^3)) * W_S;
 
 
 %% Third Constraint: Climb Requirement
@@ -47,8 +48,13 @@ L_D_climb = 0.866*L_D_max;
 %% Fifth Constaint: Takeoff Requirement
 
 V_to = 1.2 * V_s;
+S_to = 25; % [m], takeoff distance
 
-numer = 1 - exp(0.6*rho);
+%CD_G = (CD_TO - mu*CL_TO);
+
+%numer = 1 - exp(0.6*rho*g*CD_G*S_TO*1./(W_S));
+
+%denom = mu-(mu+CD_G/CL_R) * (exp(0.6*rho*g*CD_G*S_TO*1./W_S));
 
 
 % Final constraint plot:
