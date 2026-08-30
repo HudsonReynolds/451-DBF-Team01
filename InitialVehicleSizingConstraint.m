@@ -6,7 +6,16 @@
 % these will need to be justified in our document and edited based off
 % those decisions:
 
-params = table2struct(readtable("SizingParams.xlsx"));
+% load the values from the excel sheet
+params = readcell("SizingParams.xlsx");
+
+N = length(params);
+
+% put the data into a MATLAB 
+for idx = 2:N
+data.(params{idx,1}) = params{idx,2}
+end
+
 
 % aircraft aerodynamic quantities
 CL_max = 1.2; % [-], max lift coefficient
