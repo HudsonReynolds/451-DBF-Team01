@@ -1,10 +1,8 @@
 % This script does initial sizing of the vehicle based on constraint
 % analysis for the system.
 
-% --- parameters ---
-
-% these will need to be justified in our document and edited based off
-% those decisions:
+% system parameters are all pulled from an Excel spreadsheet. See
+% 'SizingParams.xlsx' for more details:
 
 % load the values from the excel sheet
 params = readcell("SizingParams.xlsx");
@@ -50,6 +48,7 @@ S_to = 25; % [m], takeoff distance
 
 CL_TO = CL_C;
 CD_TO = data.CD_0 + data.K * data.CL_TO;
+
 %CD_G = (CD_TO - mu*CL_TO);
 
 %numer = 1 - exp(0.6*rho*g*CD_G*S_TO*1./(W_S));
