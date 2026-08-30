@@ -6,6 +6,8 @@
 % these will need to be justified in our document and edited based off
 % those decisions:
 
+params = table2struct(readtable("SizingParams.xlsx"));
+
 % aircraft aerodynamic quantities
 CL_max = 1.2; % [-], max lift coefficient
 L_D_max = 7;  % [-], lift to drag ratio
