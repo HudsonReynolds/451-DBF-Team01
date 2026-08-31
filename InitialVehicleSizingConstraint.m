@@ -4,6 +4,8 @@
 % system parameters are all pulled from an Excel spreadsheet. See
 % 'SizingParams.xlsx' for more details:
 
+set(groot, 'defaultAxesTickLabelInterpreter','latex')
+
 % load the values from the excel sheet
 params = readcell("SizingParams.xlsx");
 
@@ -59,7 +61,7 @@ hold on;
 plot(W_S_max*ones(2,1),[0;0.25], 'r-',  'LineWidth', 1.5, 'DisplayName', 'Stall Speed');
 plot([0;W_S_max],W_P_climb*ones(2,1), 'g--', 'LineWidth', 1.5, 'DisplayName', 'Climb Constraint');
 plot(W_S,W_P_cruise, 'b:',  'LineWidth', 1.5, 'DisplayName', 'Cruise Constraint');
-plot(W_S,W_P_m, 'c-.', 'LineWidth', 1.5, 'DisplayName', 'Manuever Constraint');
+plot(W_S,W_P_m, 'c-.', 'LineWidth', 1.5, 'DisplayName', 'Maneuver Constraint');
 plot(W_S,W_P_TO, 'k-',  'LineWidth', 2.5, 'DisplayName', 'Takeoff Constraint');
 plot(data.W_S_design,data.W_P_design, 'r*', 'MarkerSize', 12, 'DisplayName', 'Design Point')
 text(data.W_S_design-1, data.W_P_design-.001, ...
@@ -70,8 +72,8 @@ text(data.W_S_design-1, data.W_P_design-.001, ...
 ylim([0, 0.50]);
 xlim([0, W_S_max*1.05]);
 set(gca, 'FontSize', 14);
-xlabel("$\frac{W}{S} \left[\frac{N}{m^2}\right]$", 'FontSize', 18)
-ylabel("$\frac{W}{P} \left[\frac{N}{W}\right]$", 'Rotation', 0, 'FontSize', 18)
+xlabel("$\frac{W}{S} \left[\frac{N}{m^2}\right]$", 'FontSize', 18, Interpreter='latex')
+ylabel("$\frac{W}{P} \left[\frac{N}{W}\right]$", 'Rotation', 0, 'FontSize', 18, Interpreter='latex')
 title('Aircraft Constraint Diagram', 'FontSize', 18)
 legend('Location','northeast', 'FontSize', 10)
 
