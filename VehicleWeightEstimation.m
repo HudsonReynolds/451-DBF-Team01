@@ -52,8 +52,6 @@ TakeOffBatteryWeightFraction = T_TO * data.g / (eta_m * data.eta_p_TO * (data.W_
 %% Battery Weight Fraction for Warmup
 WarmUpBatteryWeightFraction = warmupN * TakeOffBatteryWeightFraction; %clarify W or not
 
-
-
 BatteryWeightFractionPlane = WarmUpBatteryWeightFraction + ...
     TakeOffBatteryWeightFraction + ClimbBatteryWeightFraction + ...
     TurningBatteryWeightFraction + LevelFlightBatteryWeightFraction;
@@ -113,6 +111,9 @@ pieChart_vals = [W_pay,totBatteryWeight,Weight - W_pay - totBatteryWeight];
 
 figure();
 piechart(pieChart_vals,["Payload Weight","Battery Weight", "Empty Weight"])
+
+% calculate the energy margin:
+energyMargin = totBatteryEnergy / totEnergyRequiredByPlane
 
 
 
