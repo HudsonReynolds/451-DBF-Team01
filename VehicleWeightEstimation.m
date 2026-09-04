@@ -1,9 +1,6 @@
 % This script does initial sizing of the vehicle based on constraint
 % analysis for the system.
 
-
-% add mission margin!!
-
 close all;clear;clc
 
 % system parameters are all pulled from an Excel spreadsheet. See
