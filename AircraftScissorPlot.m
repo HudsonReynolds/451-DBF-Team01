@@ -4,6 +4,8 @@ AR_wing = 7.2;
 c_w = 0.3909;
 S_w = 1.1;
 
+% UPDATE CALC LIFT SLOPE FOR HELMBOLD
+
 CL_alpha_tail = CalcLiftSlope(AR_tail);
 
 CL_alpha_wing = CalcLiftSlope(AR_wing);
@@ -36,7 +38,8 @@ lt = 1.5; %[m]
 
 Sh_S_aft = CL_alpha_wing.*(x_cg - x_ac_w + SM) ./ ...
     (CL_alpha_tail .* (1-de_da)*lt./c_w - x_cg + x_ac_w - SM);
-xxx
+
+
 Sh_S_SM_2 = CL_alpha_wing.*(x_cg - x_ac_w + 0.2) ./ ...
     (CL_alpha_tail .* (1-de_da)*lt./c_w - x_cg + x_ac_w - 0.2);
 
@@ -51,7 +54,7 @@ plot(x_cg, Sh_S_aft, 'DisplayName', 'Aft Limit $SM = 0.1$')
 plot(x_cg, Sh_S_SM_2, 'DisplayName', 'Selected $\frac{Sh}{S} = 0.1$')
 xlabel('$\bar{x}_{cg}$');
 ylabel('$\frac{Sh}{S}$');
-yline(0.1, 'b--')
+yline(0.1, 'b--', 'DisplayName', 'Chosen Wing to Tail Ratio')
 title('Aircraft Tail Scissor Plot');
 legend('Location','northwest')
 

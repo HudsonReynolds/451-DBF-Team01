@@ -16,6 +16,7 @@ for idx = 2:N
     data.(params{idx,1}) = params{idx,2};
 end
 
+
 %% First Constraint: Stall Speed
 % this determines the range of values to consider for W/S:
 W_S_max = 0.5*data.rho*data.V_S^2*data.CL_max; 
