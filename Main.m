@@ -18,5 +18,7 @@ end
 
 % run all of the sizing:
 InitialVehicleSizingConstraint(data);
-
+ 
 VehicleWeightEstimation(data);
+
+AircraftScissorPlot(data);
