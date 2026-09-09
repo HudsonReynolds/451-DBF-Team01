@@ -1,22 +1,4 @@
-% This script does initial sizing of the vehicle based on constraint
-% analysis for the system.
-
-close all;clear;clc
-
-% system parameters are all pulled from an Excel spreadsheet. See
-% 'SizingParams.xlsx' for more details:
-
-set(groot, 'defaultAxesTickLabelInterpreter','latex')
-
-% load the values from the excel sheet
-params = readcell("SizingParams.xlsx");
-
-N = length(params);
-
-% put the data into a MATLAB 
-for idx = 2:N
-    data.(params{idx,1}) = params{idx,2};
-end
+function VehicleWeightEstimation(data)
 
 T_LF = (2*200.73)/data.V_C;
 T_TU = (2*pi*50)/data.V_M;
@@ -111,6 +93,8 @@ piechart(pieChart_vals,["Payload Weight","Battery Weight", "Empty Weight"])
 
 % calculate the energy margin:
 energyMargin = totBatteryEnergy / totEnergyRequiredByPlane
+
+end
 
 
 

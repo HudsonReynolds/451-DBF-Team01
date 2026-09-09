@@ -1,8 +1,7 @@
-% TO DO:
+% top level control plot
 
-% Calculation of the Neutral Point:
+AircraftScissorPlot(data);
 
-% Scissor Plot - forward CG Limit, aft CG limit (stability)
 
 %% Downwash Gradient
 DeltaEOverDeltaAlpha = Kappa * CL_Alpha_Wing / pi / AR;
