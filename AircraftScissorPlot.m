@@ -17,7 +17,7 @@ x_cg = linspace(0,0.6);
 
 
 % moment coefficient about aerodynamic center wing (NEED VALUE FROM XFLR)
-CM_ac_w = -.103;
+CM_ac_w = -.082;
 
 % wing and tail lift coefficients (NEED VALUE):
 CL_W_R = 1.405;
