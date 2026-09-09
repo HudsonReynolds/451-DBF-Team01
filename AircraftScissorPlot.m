@@ -4,12 +4,13 @@
 l_t = 0.4; %[m]
 
 AR_tail = 3;
-AR_wing = 7.2;
-c_w = 0.3909;
-S_w = 1.1;
+winglength = 1.5;
+c_w = 0.291;
+S_w = winglength*c_w;
+AR_wing = winglength/c_w;
 x_ac = 0.25;
 
-CL_Alpha_Tail = CalcLiftSlope(AR_tail);
+CL_Alpha_Tail = CalcLiftSlope(AR_tail, 6.29);
 
 CL_Alpha_Wing = CalcLiftSlope(AR_wing);
 
@@ -22,7 +23,7 @@ x_cg = linspace(0,0.6);
 
 % Calculation of the Neutral Point:
 
-x_n = x_ac + ((CL_Alpha_Tail) * (1 - de_da) * V_H) / (CL_Alpha_Wing + S_t / S_w * CL_Alpha_Tail * (1 - de_da));
+%x_n = x_ac + ((CL_Alpha_Tail) * (1 - de_da) * V_H) / (CL_Alpha_Wing + S_t / S_w * CL_Alpha_Tail * (1 - de_da));
 
 % Scissor Plot - forward CG Limit, aft CG limit (stability)
 

@@ -1,4 +1,4 @@
-% TO DO:
+% top level control plot
 
 AircraftScissorPlot(data);
 
