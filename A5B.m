@@ -1,6 +1,5 @@
 % TO DO:
 
-% Calculation of the Neutral Point:
+AircraftScissorPlot(data);
 
-% Scissor Plot - forward CG Limit, aft CG limit (stability)
 

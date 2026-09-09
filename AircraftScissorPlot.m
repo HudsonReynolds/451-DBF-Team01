@@ -1,19 +1,46 @@
 % basic script for computing a scissor plot of the aircraft:
-AR_tail = 3.5;
+
+% length between AC of wing and AC of tail [m]
+l_t = 0.4; %[m]
+
+AR_tail = 3;
 AR_wing = 7.2;
 c_w = 0.3909;
 S_w = 1.1;
+x_ac = 0.25;
 
-% UPDATE CALC LIFT SLOPE FOR HELMBOLD
+CL_Alpha_Tail = CalcLiftSlope(AR_tail);
 
-CL_alpha_tail = CalcLiftSlope(AR_tail);
+CL_Alpha_Wing = CalcLiftSlope(AR_wing);
 
-CL_alpha_wing = CalcLiftSlope(AR_wing);
-
-%
-de_da = 2* CL_alpha_wing / (pi * AR_wing);
+% Downwash Gradient
+kappa = 2;
+de_da = kappa* CL_Alpha_Wing / (pi * AR_wing);
 
 x_cg = linspace(0,0.6);
+
+
+% Calculation of the Neutral Point:
+
+x_n = x_ac + ((CL_Alpha_Tail) * (1 - de_da) * V_H) / (CL_Alpha_Wing + S_t / S_w * CL_Alpha_Tail * (1 - de_da));
+
+% Scissor Plot - forward CG Limit, aft CG limit (stability)
+
+% Takeoff Rotation
+St_S_takeoff = (CMO_Wing + CL_Rot * (x_cg - x_ac) - CM_EquivalentRotate) /...
+    (CLNoseUp_Tail * ((l_t / c) - x_cg + x_ac));
+
+
+
+% Static Margin
+SM = .15;
+x_cg = x_n - SM;
+
+% Stall Recovery
+St_S_stall = (CMO_Wing + CL_Max * (x_cg - x_ac) - CM_requiredRecovery) /...
+    (CL_NoseDown_Tail * ((l_t / c) - x_cg + x_ac));
+
+
 
 
 % moment coefficient about aerodynamic center wing (NEED VALUE FROM XFLR)
@@ -32,19 +59,18 @@ SM = 0.1;
 % aerodynamic center for the wing (x/c):
 x_ac_w = .25;
 
-% length between AC of wing and AC of tail [m]
-lt = 1.5; %[m]
 
 
-Sh_S_aft = CL_alpha_wing.*(x_cg - x_ac_w + SM) ./ ...
-    (CL_alpha_tail .* (1-de_da)*lt./c_w - x_cg + x_ac_w - SM);
+
+Sh_S_aft = CL_Alpha_Wing.*(x_cg - x_ac_w + SM) ./ ...
+    (CL_Alpha_Tail .* (1-de_da)*l_t./c_w - x_cg + x_ac_w - SM);
 
 
-Sh_S_SM_2 = CL_alpha_wing.*(x_cg - x_ac_w + 0.2) ./ ...
-    (CL_alpha_tail .* (1-de_da)*lt./c_w - x_cg + x_ac_w - 0.2);
+Sh_S_SM_2 = CL_Alpha_Wing.*(x_cg - x_ac_w + 0.2) ./ ...
+    (CL_Alpha_Tail .* (1-de_da)*l_t./c_w - x_cg + x_ac_w - 0.2);
 
 Sh_S_for = (CM_ac_w + CL_W_R.*(x_cg - x_ac_w) - CM_cg_R)./ ...
-    (CL_T_R .* (lt./c_w - x_ac_w + 1/4));
+    (CL_T_R .* (l_t./c_w - x_ac_w + 1/4));
 
 
 figure;
