@@ -57,8 +57,3 @@ ylabel('$\frac{Sh}{S}$');
 yline(0.1, 'b--', 'DisplayName', 'Chosen Wing to Tail Ratio')
 title('Aircraft Tail Scissor Plot');
 legend('Location','northwest')
-
-
-function slope = CalcLiftSlope(AR)
-    slope = pi*AR / (1+sqrt(1+(AR/2)^2));
-end
