@@ -1,4 +1,5 @@
 % this script runs all of the scripts for the aircraft sizing:
+clear;clc;close all
 
 % system parameters are all pulled from an Excel spreadsheet. See
 % 'SizingParams.xlsx' for more details:
@@ -15,10 +16,10 @@ for idx = 2:N
     data.(params{idx,1}) = params{idx,2};
 end
 
-
 % run all of the sizing:
 InitialVehicleSizingConstraint(data);
  
-VehicleWeightEstimation(data);
+data.W = VehicleWeightEstimation(data);
 
-AircraftScissorPlot(data);
+% stabilility analysis
+A5B(data);

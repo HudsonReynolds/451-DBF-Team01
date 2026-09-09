@@ -1,4 +1,4 @@
-function VehicleWeightEstimation(data)
+function Weight = VehicleWeightEstimation(data)
 
 T_LF = (2*200.73)/data.V_C;
 T_TU = (2*pi*50)/data.V_M;

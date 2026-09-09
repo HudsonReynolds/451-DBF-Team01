@@ -1,15 +1,16 @@
-
+function TrimAircraft(data)
 %% ---- Trim & Trim Drag Equations ----
-
-%% Two Equation Trim
-
-Alpha_Trim = (CM0*CL_Epsilon_e + CM_Epsilon_e * (CL_Trim - CL_0)) / ((CL_Alpha * CM_Epsilon_e) - (CL_Epsilon_e * CM_Alpha));
-Epsilon_e_trim = -1 * ((CM0*CL_Alpha + CM_Alpha * (CL_trim - CL_0)) / (CL_Alpha * CM_Epsilon_e - CL_Epsilon_e * CM_Alpha));
 
 %% The Trim Condition
 CM = 0;
+CL_Trim = 2*data.W / data.rho / V^2 / S_w;
 CL = CL_Trim;
-CL_Trim = 2*W / rho / V^2 / S_w;
+
+%% Two Equation Trim
+
+Alpha_Trim = (data.CM_0*CL_Epsilon_e + CM_Epsilon_e * (CL_Trim - CL_0)) / ((CL_Alpha * CM_Epsilon_e) - (CL_Epsilon_e * CM_Alpha));
+Epsilon_e_trim = -1 * ((CM0*CL_Alpha + CM_Alpha * (CL_trim - CL_0)) / (CL_Alpha * CM_Epsilon_e - CL_Epsilon_e * CM_Alpha));
+
 
 %% Elevator Derivatives
 CL_Epsilon_e = S_t * CL_Epsilon_e_Tail / S_w;
@@ -40,6 +41,8 @@ S_r = S_rOverS_v * S_v; % where S_rOverS_v 0.30-0.45, b_r = h_v, Epsilon_r_max =
 %% Crosswind Rudder Authority
 
 Epsilon_r = -1 * (CnBetaOverCnEpsilonr) * Beta; 
+
+end
 
 
 
