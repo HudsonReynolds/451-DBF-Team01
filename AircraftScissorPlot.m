@@ -2,14 +2,13 @@ function data = AircraftScissorPlot(data)
 
 % basic script for computing a scissor plot of the aircraft:
 
-AR_tail = 3;
 winglength = 1.5;
 S_w = winglength*data.c_w;
 AR_wing = winglength/data.c_w;
 x_ac = 0.25;
 CM_0 = -0.08;
 
-data.CL_Alpha_Tail = CalcLiftSlope(AR_tail, 6.29);
+data.CL_Alpha_Tail = CalcLiftSlope(data.AR_tail, 6.29);
 data.CL_Alpha_Wing = CalcLiftSlope(AR_wing);
 
 % Downwash Gradient

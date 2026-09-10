@@ -1,13 +1,6 @@
 function TrimAircraft(data)
 %% ---- Trim & Trim Drag Equations ----
 
-%% The Trim Condition
-CM = 0;
-data.V_C
-CL_Trim = 2*data.W / data.rho / data.V_C^2 / data.S_wing;
-CL = CL_Trim;
-
-
 %% Two Equation Trim:
 
 % Here, we look over a range of values for CL_trim, which gives a range of
@@ -49,10 +42,15 @@ xlabel('Trim $C_L$')
 ylabel('$\delta_{\mathrm{e,trim}}$ [deg]')
 
 
-
+%% Break point here, this part is not finished yet
 
 %% Trim Drag
-CD_Clean = CD_0 + K*CL^2;
+K = 1 / (pi*data.AR*data.e);
+
+% compute the drag polar over a range of lift coefficients:
+CL = linspace(-1.5,1.5);
+
+CD_Clean = data.CD_0 + K*CL.^2;
 
 %% Tail Lift Required to Trim
 CL_T = (CM_ac_Wing + CL * (x_cg - x_ac_wing)) / V_H;
