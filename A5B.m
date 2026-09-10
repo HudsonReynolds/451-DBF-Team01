@@ -2,7 +2,7 @@ function A5B(data)
 
 % top level control plot
 
-AircraftScissorPlot(data);
+data = AircraftScissorPlot(data);
 
 TrimAircraft(data); 
 

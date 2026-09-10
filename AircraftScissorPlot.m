@@ -1,4 +1,4 @@
-function AircraftScissorPlot(data)
+function data = AircraftScissorPlot(data)
 
 % basic script for computing a scissor plot of the aircraft:
 
@@ -10,12 +10,14 @@ x_ac = 0.25;
 CM_0 = -0.08;
 
 data.CL_Alpha_Tail = CalcLiftSlope(AR_tail, 6.29);
-
 data.CL_Alpha_Wing = CalcLiftSlope(AR_wing);
 
 % Downwash Gradient
 kappa = 2;
 de_da = kappa* data.CL_Alpha_Wing / (pi * AR_wing);
+
+% compute the total aircraft lift slope:
+data.CL_Alpha = data.CL_Alpha_Wing + data.CL_Alpha_Tail*(1-de_da);
 
 x_cg = linspace(0.,0.5);
 
@@ -35,7 +37,6 @@ St_S_takeoff = (CM_0 + data.CL_R .* (x_cg - x_ac) - CM_EquivalentRotate) ./...
     (CLNoseUp_Tail .* ((data.l_t / data.c_w) - x_cg + x_ac));
 
 
-
 % Static Margin
 SM = .15;
 
@@ -50,13 +51,6 @@ St_S_stall = (CM_0 + data.CL_max .* (x_cg - x_ac) - CM_requiredRecovery) ./...
     (CL_NoseDown_Tail * ((data.l_t / data.c_w) - x_cg + x_ac));
 
 
-% wing and tail lift coefficients (NEED VALUE):
-CL_W_R = 1.405;
-CL_T_R = -1.031;
-
-% CM_cg
-CM_cg_R = 0.015;
-
 % static margin:
 SM = 0.15;
 
@@ -65,8 +59,12 @@ SM = 0.15;
 St_S_stability = (x_cg - x_ac + SM) ./ ((1-de_da)*data.l_t/data.c_w - (x_cg - x_ac + SM));
 
 
+% TODO: design parameters from this (EXCEL)?
+data.St_S = 0.28;
+data.x_cg_design = 0.2;
 
-
+% TODO: choose the chord of the tail:
+data.V_H = data.St_S*data.l_t/data.c_t;
 
 figure;
 plot(x_cg, St_S_takeoff, 'DisplayName', 'Forward Limit (Takeoff)')
@@ -75,7 +73,7 @@ plot(x_cg, St_S_stall, 'DisplayName', 'Stall Limit')
 plot(x_cg,St_S_stability,'DisplayName','Stability Limit')
 xlabel('$\bar{x}_{cg}$');
 ylabel('$\frac{Sh}{S}$');
-yline(0.3, 'b--', 'DisplayName', 'Chosen Wing to Tail Ratio')
+yline(0.28, 'b--', 'DisplayName', 'Chosen Wing to Tail Ratio')
 title('Aircraft Tail Scissor Plot');
 legend('Location','northwest')
 
