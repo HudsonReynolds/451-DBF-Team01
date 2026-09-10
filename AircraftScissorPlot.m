@@ -62,6 +62,7 @@ St_S_stability = (x_cg - x_ac + SM) ./ ((1-de_da)*data.l_t/data.c_w - (x_cg - x_
 % TODO: design parameters from this (EXCEL)?
 data.St_S = 0.28;
 data.x_cg_design = 0.2;
+data.SM = SM;
 
 % TODO: choose the chord of the tail:
 data.V_H = data.St_S*data.l_t/data.c_t;

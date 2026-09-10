@@ -13,7 +13,7 @@ CL = CL_Trim;
 % Here, we look over a range of values for CL_trim, which gives a range of
 % solutions for alpha_trim and delta_eTrim
 
-CL_Trim_range = linspace(0,1);
+CL_Trim_range = linspace(-.3,1.5);
 
 % compute elevator deflection lift 
 CL_delta_e_Tail = data.CL_Alpha_Tail/pi * ...
@@ -24,10 +24,30 @@ CL_delta_e = data.St_S * CL_delta_e_Tail;
 % compute elevator deflection moment:
 CM_delta_e = CL_delta_e_Tail*data.St_S*(data.x_cg_design - data.x_ac) - CL_delta_e_Tail * data.V_H;
 
+% compute the whole aircraft CM_alpha:
+CM_Alpha = -data.CL_Alpha*data.SM;
+
 Alpha_Trim = (data.CM_0*CL_delta_e + CM_delta_e * ...
     (CL_Trim_range - data.CL_0)) ./ ...
     ((data.CL_Alpha * CM_delta_e) - (CL_delta_e * CM_Alpha));
-Epsilon_e_trim = -1 * ((CM0*CL_Alpha + CM_Alpha * (CL_trim - CL_0)) / (CL_Alpha * CM_Epsilon_e - CL_Epsilon_e * CM_Alpha));
+delta_e_trim = -1 * ((data.CM_0*data.CL_Alpha + CM_Alpha * (CL_Trim_range - data.CL_0)) / (data.CL_Alpha * CM_delta_e - CL_delta_e * CM_Alpha));
+
+
+% draw the figure result:
+figure('Name','Aircraft Trim v. Trim CL')
+subplot(1,2,1)
+plot(CL_Trim_range,rad2deg(Alpha_Trim))
+xlabel('Trim $C_L$')
+ylabel('$\alpha_{\mathrm{trim}}$ [deg]')
+
+subplot(1,2,2)
+plot(CL_Trim_range,rad2deg(delta_e_trim))
+hold on
+yline(15,'r--','15° Limit')
+yline(-15,'r--','-15° Limit')
+xlabel('Trim $C_L$')
+ylabel('$\delta_{\mathrm{e,trim}}$ [deg]')
+
 
 
 
