@@ -3,10 +3,22 @@ function TrimAircraft(data)
 
 %% The Trim Condition
 CM = 0;
-CL_Trim = 2*data.W / data.rho / V^2 / S_w;
+data.V_C
+CL_Trim = 2*data.W / data.rho / data.V_C^2 / S_w;
 CL = CL_Trim;
 
-%% Two Equation Trim
+
+%% Two Equation Trim:
+
+% Here, we look over a range of values for CL_trim, which gives a range of
+% solutions for alpha_trim and delta_eTrim
+
+CL_Trim_range = linspace(0,1);
+
+% compute elevator deflection lift 
+CL_Epsilon_e_Tail = data.CL_Alpha_Tail ...
+    / pi * (acos(1-2*data.E) + 2*sqrt(data.E*(1-data.E)));
+
 
 Alpha_Trim = (data.CM_0*CL_Epsilon_e + CM_Epsilon_e * (CL_Trim - CL_0)) / ((CL_Alpha * CM_Epsilon_e) - (CL_Epsilon_e * CM_Alpha));
 Epsilon_e_trim = -1 * ((CM0*CL_Alpha + CM_Alpha * (CL_trim - CL_0)) / (CL_Alpha * CM_Epsilon_e - CL_Epsilon_e * CM_Alpha));
@@ -17,7 +29,6 @@ CL_Epsilon_e = S_t * CL_Epsilon_e_Tail / S_w;
 CM_Epsilon_e = CL_Epsilon_e_Tail * S_t * (x_cg - x_ac_wing) / S_w - CL_Epsilon_e_Tail * V_H;
 
 E = C_e / C_t;
-CL_Epsilon_e_Tail = CL_Alpha_Tail / pi * (acos(1-2*E) + 2*sqrt(E*(1-E)));
 
 %% Trim Drag
 CD_Clean = CD_0 + K*CL^2;

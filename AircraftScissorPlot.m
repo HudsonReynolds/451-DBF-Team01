@@ -9,13 +9,13 @@ AR_wing = winglength/data.c_w;
 x_ac = 0.25;
 CM_0 = -0.08;
 
-CL_Alpha_Tail = CalcLiftSlope(AR_tail, 6.29);
+data.CL_Alpha_Tail = CalcLiftSlope(AR_tail, 6.29);
 
-CL_Alpha_Wing = CalcLiftSlope(AR_wing);
+data.CL_Alpha_Wing = CalcLiftSlope(AR_wing);
 
 % Downwash Gradient
 kappa = 2;
-de_da = kappa* CL_Alpha_Wing / (pi * AR_wing);
+de_da = kappa* data.CL_Alpha_Wing / (pi * AR_wing);
 
 x_cg = linspace(0.,0.5);
 
@@ -44,7 +44,7 @@ CM_requiredRecovery = -data.CL_max*SM + CM_0;
 
 alpha_stall = deg2rad(15.8);
 
-CL_NoseDown_Tail = CL_Alpha_Tail*alpha_stall;
+CL_NoseDown_Tail = data.CL_Alpha_Tail*alpha_stall;
 
 St_S_stall = (CM_0 + data.CL_max .* (x_cg - x_ac) - CM_requiredRecovery) ./...
     (CL_NoseDown_Tail * ((data.l_t / data.c_w) - x_cg + x_ac));
