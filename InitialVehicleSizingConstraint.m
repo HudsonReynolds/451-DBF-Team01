@@ -5,7 +5,7 @@ function InitialVehicleSizingConstraint(data)
     W_S = 0:W_S_max;
     
     %% Second Constraint: Cruise Speed
-    W_P_cruise = (data.eta_p*data.phi_C / (0.5*data.CD*data.rho*data.V_C^3)) * W_S;
+    W_P_cruise = (data.eta_p*data.phi_C / (0.5*data.CD_cruise*data.rho*data.V_C^3)) * W_S;
     
     %% Third Constraint: Climb Requirement
     % climb at 0.866 L/D max:

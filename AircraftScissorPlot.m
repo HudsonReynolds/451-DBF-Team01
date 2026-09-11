@@ -59,7 +59,7 @@ St_S_stability = (x_cg - x_ac + SM) ./ ((1-de_da)*data.l_t/data.c_w - (x_cg - x_
 
 
 % TODO: design parameters from this (EXCEL)?
-data.St_S = 0.28;
+data.St_S = 0.25;
 data.x_cg_design = 0.2;
 data.SM = SM;
 
@@ -73,7 +73,7 @@ plot(x_cg, St_S_stall, 'DisplayName', 'Stall Limit')
 plot(x_cg,St_S_stability,'DisplayName','Stability Limit')
 xlabel('$\bar{x}_{cg}$');
 ylabel('$\frac{Sh}{S}$');
-yline(0.28, 'b--', 'DisplayName', 'Chosen Wing to Tail Ratio')
+yline(data.St_S, 'b--', 'DisplayName', 'Chosen Wing to Tail Ratio')
 title('Aircraft Tail Scissor Plot');
 legend('Location','northwest')
 
