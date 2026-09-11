@@ -64,7 +64,7 @@ data.x_cg_design = 0.2;
 data.SM = SM;
 
 % TODO: choose the chord of the tail:
-data.V_H = data.St_S*data.l_t/data.c_t;
+data.V_H = data.St_S*data.l_t/data.c_w;
 
 figure;
 plot(x_cg, St_S_takeoff, 'DisplayName', 'Forward Limit (Takeoff)')
