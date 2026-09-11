@@ -69,10 +69,13 @@ end
 
 
 %% ---- Ailerons: roll-rate authority ----
-E_a = 0.25;                     % aileron chord fraction -- PLACEHOLDER
-y1_frac = 0.6; y2_frac = 0.95;  % aileron span fractions of the semispan -- PLACEHOLDER
-delta_a_limit = deg2rad(20);    % PLACEHOLDER max aileron deflection
-V_roll = data.V_C;              % PLACEHOLDER design airspeed for the roll criterion
+E_a = 0.25;                     % aileron chord fraction
+y1_frac = 0.7; y2_frac = 1;     % aileron span fractions of the semispan
+delta_a_limit = deg2rad(15);    % max aileron deflection
+V_roll = 1.3*data.V_S;          % design airspeed for the roll criterion
+% C_lp = -data.CL_Alpha_Wing/4;
+% CL_Epsilon_A
+
 pb_2V_target = 0.09;            % PLACEHOLDER roll-rate target -- state source (e.g. MIL-F-8785C Level 1)
 
 b = data.S_wing / data.c_w;     % wingspan [m] -- rectangular wing (c_w constant along span)
@@ -103,7 +106,7 @@ if abs(roll_margin) < 0.005
 end
 
 %% ---- Rudder: crosswind authority ----
-V_v = 0.04;                   % vertical tail volume coefficient -- PLACEHOLDER, cite a source table
+V_v = 0.04*2;                 % vertical tail volume coefficient -- PLACEHOLDER, cite a source table
 AR_v = 1.5;                   % vertical tail aspect ratio -- PLACEHOLDER
 E_r = 0.30;                   % rudder chord fraction -- PLACEHOLDER
 delta_r_limit = deg2rad(20);  % PLACEHOLDER max rudder deflection

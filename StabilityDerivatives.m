@@ -68,10 +68,15 @@ c_of_y = data.c_w*ones(size(y)); % rectangular wing, no taper
 Cl_beta_dihedral    = -2*Gamma_dihedral*data.CL_Alpha_Wing/(data.S_wing*b) * trapz(y, c_of_y.*y);
 Cl_beta_no_dihedral = 0; % wing-alone, zero-dihedral baseline for comparison
 
+df = .1; % body depth at the wing
+zw = .04; %wing root height
+
+Cl_beta = -1.2 * sqrt(data.AR) * zw / data.Wingspan * 2 * 1 * 1 * 1 * df / data.Wingspan;
+
 Cl_beta_stable_range = [-0.20, -0.05]; % /rad, typical light GA/RC aircraft -- verify against Sadraey's tables
 
 fprintf('  Dihedral = %.1f deg\n', Gamma_dihedral_deg);
-fprintf('  Cl_beta (dihedral only) = %.4f /rad (vs. %.4f /rad at zero dihedral)', Cl_beta_dihedral, Cl_beta_no_dihedral);
+fprintf('  Cl_beta (dihedral only) = %.4f /rad (vs. %.4f /rad at zero dihedral)', Cl_beta_dihedral, Cl_beta);
 if Cl_beta_dihedral <= Cl_beta_stable_range(2) && Cl_beta_dihedral >= Cl_beta_stable_range(1)
     fprintf('  [within typical stable range %.2f to %.2f]\n', Cl_beta_stable_range(1), Cl_beta_stable_range(2));
 else
@@ -84,6 +89,6 @@ data.StabilityDerivatives.SM        = SM_actual;
 data.StabilityDerivatives.CM_Alpha  = CM_Alpha;
 data.StabilityDerivatives.Cn_beta   = Cn_beta;
 data.StabilityDerivatives.Gamma_deg = Gamma_dihedral_deg;
-data.StabilityDerivatives.Cl_beta   = Cl_beta_dihedral;
+data.StabilityDerivatives.Cl_beta   = Cl_beta;
 
 end
