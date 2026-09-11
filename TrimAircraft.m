@@ -65,8 +65,8 @@ hold on
 % Moment balance about the CG: CM_0 + CL_wing*(x_cg - x_ac) - V_H*CL_tail = 0
 % Total CL splits between wing and tail: CL = CL_wing + St_S*CL_tail
 % Solving the two together for CL_wing(CL):
-e_t = 0.8; % assumed tail Oswald efficiency -- PLACEHOLDER, add to assumptions list
-K_tail = 1 / (pi*e_t*data.AR_tail);
+
+K_tail = 1 / (pi*data.e*data.AR_tail);
 
 a = 1 + data.St_S*(data.x_cg_design - data.x_ac)/data.V_H;
 b = data.St_S*data.CM_0/data.V_H;
