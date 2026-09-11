@@ -28,19 +28,18 @@ x_cg = linspace(0.,0.5);
 % Scissor Plot - forward CG Limit, aft CG limit (stability)
 
 % TODO: Update this value once we know control authority limits
-CLNoseUp_Tail = -0.7;
+
+data.delta_e_limit_deg = 15; % [deg] elevator travel limit -- confirm against servo/horn travel
+CL_delta_e_Tail_fwd = data.CL_Alpha_Tail/pi * (acos(1-2*data.E) + 2*sqrt(data.E*(1-data.E)));
+CLNoseUp_Tail = -CL_delta_e_Tail_fwd * deg2rad(data.delta_e_limit_deg);
 CM_EquivalentRotate = 0.1;
 
 % Takeoff Rotation
 St_S_takeoff = (CM_0 + data.CL_R .* (x_cg - x_ac) - CM_EquivalentRotate) ./...
     (CLNoseUp_Tail .* ((data.l_t / data.c_w) - x_cg + x_ac));
 
-
-% Static Margin
-SM = .15;
-
 % Stall Recovery
-CM_requiredRecovery = -data.CL_max*SM + CM_0;
+CM_requiredRecovery = -data.CL_max*data.SM + CM_0;
 
 alpha_stall = deg2rad(15.8);
 
@@ -49,22 +48,24 @@ CL_NoseDown_Tail = data.CL_Alpha_Tail*alpha_stall;
 St_S_stall = (CM_0 + data.CL_max .* (x_cg - x_ac) - CM_requiredRecovery) ./...
     (CL_NoseDown_Tail * ((data.l_t / data.c_w) - x_cg + x_ac));
 
-
-% static margin:
-SM = 0.15;
-
 % stability limit:
-
-St_S_stability = (x_cg - x_ac + SM) ./ ((1-de_da)*data.l_t/data.c_w - (x_cg - x_ac + SM));
-
+St_S_stability = (x_cg - x_ac + data.SM) ./ ((1-de_da)*data.l_t/data.c_w - (x_cg - x_ac + data.SM));
 
 % TODO: design parameters from this (EXCEL)?
-data.St_S = 0.25;
-data.x_cg_design = 0.2;
-data.SM = SM;
+data.St_S = 0.22;
 
 % TODO: choose the chord of the tail:
 data.V_H = data.St_S*data.l_t/data.c_w;
+
+data.x_cg_fwd = interp1(St_S_takeoff, x_cg, data.St_S);
+data.x_cg_aft = interp1(St_S_stability, x_cg, data.St_S);
+
+% Neutral Point Calculation
+one_minus_deda = (data.CL_Alpha - data.CL_Alpha_Wing)/data.CL_Alpha_Tail;
+x_n = data.x_ac + (data.CL_Alpha_Tail*one_minus_deda*data.V_H) / ...
+      (data.CL_Alpha_Wing + data.St_S*data.CL_Alpha_Tail*one_minus_deda);
+
+data.x_cg_design = x_n - data.SM;
 
 figure;
 plot(x_cg, St_S_takeoff, 'DisplayName', 'Forward Limit (Takeoff)')

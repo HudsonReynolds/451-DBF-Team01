@@ -8,25 +8,71 @@ function data = ControlSurfaceSizing(data)
 %   - V_v, AR_v, E_r                               : vertical tail geometry, rudder chord fraction
 %   - crosswind_ratio                              : design crosswind, V_xwind/V_TO
 
-%% ---- Elevator: forward-CG landing-flare check ----
+%% ---- Elevator: trim envelope plot (matches the assignment's example figure) ----
 delta_e_limit = 15; % [deg] PLACEHOLDER -- confirm against servo/horn travel
+
+% CG cases to plot. Only the placeholder design CG exists right now --
+% once AircraftScissorPlot.m outputs real forward/aft limits, replace
+% this with both and the loop below draws both curves automatically:
+%   CG_cases  = [data.x_cg_fwd, data.x_cg_aft];
+%   CG_labels = {'Forward CG limit','Aft CG limit'};
+CG_cases  = [data.x_cg_fwd, data.x_cg_aft];
+CG_labels = {sprintf('Forward CG limit = %.3f', data.x_cg_fwd), ...
+             sprintf('Aft CG limit = %.3f', data.x_cg_aft)};
 
 CL_delta_e_Tail = data.CL_Alpha_Tail/pi * (acos(1-2*data.E) + 2*sqrt(data.E*(1-data.E)));
 CL_delta_e      = data.St_S * CL_delta_e_Tail;
-CM_delta_e      = CL_delta_e_Tail*data.St_S*(data.x_cg_design - data.x_ac) - CL_delta_e_Tail*data.V_H;
-CM_Alpha        = -data.CL_Alpha*data.SM;
 
-delta_e_flare = -1*((data.CM_ac_w*data.CL_Alpha + CM_Alpha*(data.CL_max - data.CL_0)) / ...
-                     (data.CL_Alpha*CM_delta_e - CL_delta_e*CM_Alpha));
-delta_e_flare_deg = rad2deg(delta_e_flare);
-elevator_margin   = delta_e_limit - abs(delta_e_flare_deg);
+% Neutral point (same derivation as StabilityDerivatives.m) so static
+% margin -- and therefore CM_alpha -- is recomputed per CG case instead
+% of reusing a single fixed data.SM:
+one_minus_deda = (data.CL_Alpha - data.CL_Alpha_Wing)/data.CL_Alpha_Tail;
+x_n = data.x_ac + (data.CL_Alpha_Tail*one_minus_deda*data.V_H) / ...
+      (data.CL_Alpha_Wing + data.St_S*data.CL_Alpha_Tail*one_minus_deda);
+
+CL_range = linspace(-0.3, data.CL_max, 200);
+
+figure('Name','Trim Envelope - Elevator')
+hold on
+plot_colors = lines(numel(CG_cases));
+delta_e_at_max_all = zeros(size(CG_cases));
+
+for k = 1:numel(CG_cases)
+    x_cg_k       = CG_cases(k);
+    CM_Alpha_k   = -data.CL_Alpha*(x_n - x_cg_k);
+    CM_delta_e_k = CL_delta_e_Tail*data.St_S*(x_cg_k - data.x_ac) - CL_delta_e_Tail*data.V_H;
+
+    delta_e_k_deg = rad2deg(-1*((data.CM_0*data.CL_Alpha + CM_Alpha_k*(CL_range - data.CL_0)) / ...
+                                 (data.CL_Alpha*CM_delta_e_k - CL_delta_e*CM_Alpha_k)));
+
+    plot(CL_range, delta_e_k_deg, 'LineWidth', 1.5, 'Color', plot_colors(k,:), 'DisplayName', CG_labels{k})
+    delta_e_at_max_all(k) = interp1(CL_range, delta_e_k_deg, data.CL_max);
+end
+
+yline(delta_e_limit, ':k', sprintf('Elevator travel limit, +-%d deg', delta_e_limit), 'HandleVisibility','off')
+yline(-delta_e_limit, ':k', 'HandleVisibility','off')
+xline(data.CL_max, '-.', 'C_{L,max}', 'Color',[0 0.6 0.3], 'LineWidth',1.2, 'HandleVisibility','off')
+
+[worst_deg, worst_idx] = max(abs(delta_e_at_max_all));
+elevator_margin = delta_e_limit - worst_deg;
+plot(data.CL_max, delta_e_at_max_all(worst_idx), 'ko', 'MarkerFaceColor','k', 'MarkerSize',6, 'HandleVisibility','off')
+text(data.CL_max - 0.05, delta_e_at_max_all(worst_idx), ...
+    sprintf('%s at C_{L,max}:\n%.0f of %d deg used, %.0f deg left', CG_labels{worst_idx}, worst_deg, delta_e_limit, elevator_margin), ...
+    'HorizontalAlignment','right','VerticalAlignment','top')
+
+xlabel('Trim Lift Coefficient, C_L (-)')
+ylabel('Elevator Deflection to Trim, \delta_e (deg)')
+title('Trim Envelope -- Elevator Required against Lift Coefficient')
+legend('Location','best')
+ylim([-1.5*delta_e_limit, 1.5*delta_e_limit])
+grid on
 
 fprintf('--- Elevator ---\n');
-fprintf('Chord fraction E = %.2f, at CG = %.2f, CL_max = %.2f:\n', data.E, data.x_cg_design, data.CL_max);
-fprintf('  delta_e required = %.2f deg (limit +-%.0f deg, margin = %.2f deg)\n', delta_e_flare_deg, delta_e_limit, elevator_margin);
+fprintf('  Worst-case delta_e at CL_max = %.2f deg (limit +-%.0f deg, margin = %.2f deg)\n', worst_deg, delta_e_limit, elevator_margin);
 if elevator_margin < 1
     warning('Elevator authority has under 1 deg of margin at the flare condition -- treat as a finding, not a pass.');
 end
+
 
 %% ---- Ailerons: roll-rate authority ----
 E_a = 0.25;                     % aileron chord fraction -- PLACEHOLDER
@@ -90,7 +136,7 @@ fprintf('S_v = %.4f m^2, AR_v = %.2f, chord fraction %.2f, crosswind ratio %.2f:
 fprintf('  delta_r required = %.2f deg (limit +-%.0f deg, margin = %.2f deg)\n', ...
     rad2deg(delta_r_required), rad2deg(delta_r_limit), rudder_margin);
 
-data.ControlSurfaces.Elevator = struct('E', data.E, 'delta_flare_deg', delta_e_flare_deg, 'margin_deg', elevator_margin);
+data.ControlSurfaces.Elevator = struct('E', data.E, 'delta_flare_deg', worst_deg, 'margin_deg', elevator_margin);
 data.ControlSurfaces.Aileron  = struct('E_a', E_a, 'y1_frac', y1_frac, 'y2_frac', y2_frac, 'pb_2V', pb_2V_achieved, 'roll_rate_dps', rad2deg(p_roll));
 data.ControlSurfaces.Rudder   = struct('S_v', S_v, 'AR_v', AR_v, 'E_r', E_r, 'delta_r_deg', rad2deg(delta_r_required), 'margin_deg', rudder_margin);
 

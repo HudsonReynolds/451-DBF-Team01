@@ -1,7 +1,6 @@
-function TrimAircraft(data)
+function data = TrimAircraft(data)
 
 %% Two Equation Trim:
-
 % Here, we look over a range of values for CL_trim, which gives a range of
 % solutions for alpha_trim and delta_eTrim
 
@@ -16,23 +15,21 @@ CL_delta_e = data.St_S * CL_delta_e_Tail;
 % compute elevator deflection moment:
 CM_delta_e = CL_delta_e_Tail*data.St_S*(data.x_cg_design - data.x_ac) - CL_delta_e_Tail * data.V_H;
 
-% compute the whole aircraft CM_alpha:
+% % compute the whole aircraft CM_alpha:
 CM_Alpha = -data.CL_Alpha*data.SM;
 
 % compute the whole aircraft CM_0:
-
 CL_t0 = 0;
 
-CM_0 = data.CM_ac_w + data.CL_0 * (data.x_cg_design - data.x_ac) ...
-    / data.c_w - CL_t0 * data.St_S * (data.x_cg_design - data.x_ac) / data.c_w;
+data.CM_0 = data.CM_ac_w + data.CL_0 * (data.x_cg_design - data.x_ac)...
+    - CL_t0 * data.St_S * (data.x_cg_design - data.x_ac);
 
 %CM_AC,W + CL_W * (x_CG - x_AC,W / c_w) - CL_T * St/S * lt / c_w + CL_T * St/S * (x_CG - x_AC,W / c_w)
 
-Alpha_Trim = (CM_0*CL_delta_e + CM_delta_e * ...
+Alpha_Trim = (data.CM_0*CL_delta_e + CM_delta_e * ...
     (CL_Trim_range - data.CL_0)) ./ ...
     ((data.CL_Alpha * CM_delta_e) - (CL_delta_e * CM_Alpha));
-delta_e_trim = -1 * ((CM_0*data.CL_Alpha + CM_Alpha * (CL_Trim_range - data.CL_0)) / (data.CL_Alpha * CM_delta_e - CL_delta_e * CM_Alpha));
-
+delta_e_trim = -1 * ((data.CM_0*data.CL_Alpha + CM_Alpha * (CL_Trim_range - data.CL_0)) / (data.CL_Alpha * CM_delta_e - CL_delta_e * CM_Alpha));
 
 % draw the figure result:
 figure('Name','Aircraft Trim v. Trim CL')
@@ -69,8 +66,6 @@ hold on
 % Moment balance about the CG: CM_0 + CL_wing*(x_cg - x_ac) - V_H*CL_tail = 0
 % Total CL splits between wing and tail: CL = CL_wing + St_S*CL_tail
 % Solving the two together for CL_wing(CL):
-
-data.e_t = 0.7; % TODO: add this to excel!
 
 K_tail = 1 / (pi*data.e_t*data.AR_tail);
 
