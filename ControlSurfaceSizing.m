@@ -9,16 +9,10 @@ function data = ControlSurfaceSizing(data)
 %   - crosswind_ratio                              : design crosswind, V_xwind/V_TO
 
 %% ---- Elevator: trim envelope plot (matches the assignment's example figure) ----
-delta_e_limit = 15; % [deg] PLACEHOLDER -- confirm against servo/horn travel
+delta_e_limit = data.delta_e_limit_deg;
 
-% CG cases to plot. Only the placeholder design CG exists right now --
-% once AircraftScissorPlot.m outputs real forward/aft limits, replace
-% this with both and the loop below draws both curves automatically:
-%   CG_cases  = [data.x_cg_fwd, data.x_cg_aft];
-%   CG_labels = {'Forward CG limit','Aft CG limit'};
-CG_cases  = [data.x_cg_fwd, data.x_cg_aft];
-CG_labels = {sprintf('Forward CG limit = %.3f', data.x_cg_fwd), ...
-             sprintf('Aft CG limit = %.3f', data.x_cg_aft)};
+CG_cases  = [data.x_cg_design-.1, data.x_cg_aft];
+CG_labels = {'Forward CG limit','Aft CG limit'};
 
 CL_delta_e_Tail = data.CL_Alpha_Tail/pi * (acos(1-2*data.E) + 2*sqrt(data.E*(1-data.E)));
 CL_delta_e      = data.St_S * CL_delta_e_Tail;

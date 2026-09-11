@@ -29,7 +29,7 @@ x_cg = linspace(0.,0.5);
 
 % TODO: Update this value once we know control authority limits
 
-data.delta_e_limit_deg = 15; % [deg] elevator travel limit -- confirm against servo/horn travel
+data.delta_e_limit_deg = 20; % [deg] elevator travel limit -- confirm against servo/horn travel
 CL_delta_e_Tail_fwd = data.CL_Alpha_Tail/pi * (acos(1-2*data.E) + 2*sqrt(data.E*(1-data.E)));
 CLNoseUp_Tail = -CL_delta_e_Tail_fwd * deg2rad(data.delta_e_limit_deg);
 CM_EquivalentRotate = 0.1;
@@ -52,7 +52,7 @@ St_S_stall = (CM_0 + data.CL_max .* (x_cg - x_ac) - CM_requiredRecovery) ./...
 St_S_stability = (x_cg - x_ac + data.SM) ./ ((1-de_da)*data.l_t/data.c_w - (x_cg - x_ac + data.SM));
 
 % TODO: design parameters from this (EXCEL)?
-data.St_S = 0.22;
+data.St_S = 0.23;
 
 % TODO: choose the chord of the tail:
 data.V_H = data.St_S*data.l_t/data.c_w;
