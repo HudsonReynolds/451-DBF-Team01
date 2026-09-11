@@ -59,26 +59,51 @@ plot(CL,CD_Clean, 'DisplayName', 'Clean Drag Polar')
 xlabel('Lift Coefficient [-]')
 ylabel('Drag Coefficient [-]')
 
+hold on
 
-%% Tail Lift Required to Trim
-CL_T = (CM_ac_Wing + CL * (x_cg - x_ac_wing)) / V_H;
+%% Tail Lift Required to Trim ---- Beginning of CLAUDE CODE
+% Moment balance about the CG: CM_0 + CL_wing*(x_cg - x_ac) - V_H*CL_tail = 0
+% Total CL splits between wing and tail: CL = CL_wing + St_S*CL_tail
+% Solving the two together for CL_wing(CL):
+e_t = 0.8; % assumed tail Oswald efficiency -- PLACEHOLDER, add to assumptions list
+K_tail = 1 / (pi*e_t*data.AR_tail);
+
+a = 1 + data.St_S*(data.x_cg_design - data.x_ac)/data.V_H;
+b = data.St_S*data.CM_0/data.V_H;
+
+CL_Wing = (CL - b) ./ a;
+CL_Tail = (data.CM_0 + CL_Wing*(data.x_cg_design - data.x_ac)) / data.V_H;
 
 %% The Trimmed Drag Polar
-CD_Trim = CD_0 + K * (CL_Wing)^2 + St/S * (CL_Tail)^2 / pi / e_t / AR_Tail;
+CD_Trim = data.CD_0 + K*CL_Wing.^2 + data.St_S*K_tail*CL_Tail.^2;
 
-%% ---- Sizing The Vertical Tail, Rudder, and Ailerons ----
+plot(CL, CD_Trim, '--', 'DisplayName', 'Trimmed Drag Polar')
+legend('Location','best')
 
-%% Vertical-Tail Volume Coefficient
-V_v = S_v * l_v / S_w / b;
-S_v = V_v * S_w * b / l_v;
-h_v = sqrt(AR_v * S_v);
+%% End of Claude Code ----
 
-%% Rudder Geometry from Vertical Tail
-S_r = S_rOverS_v * S_v; % where S_rOverS_v 0.30-0.45, b_r = h_v, Epsilon_r_max = +-25-35 degrees
 
-%% Crosswind Rudder Authority
+% %% Tail Lift Required to Trim
+% CL_T = (CM_ac_Wing + CL * (x_cg - x_ac_wing)) / V_H;
+% 
+% %% The Trimmed Drag Polar
+% CD_Trim = CD_0 + K * (CL_Wing)^2 + St/S * (CL_Tail)^2 / pi / e_t / AR_Tail;
 
-Epsilon_r = -1 * (CnBetaOverCnEpsilonr) * Beta; 
+
+
+% %% ---- Sizing The Vertical Tail, Rudder, and Ailerons ----
+% 
+% %% Vertical-Tail Volume Coefficient
+% V_v = S_v * l_v / S_w / b;
+% S_v = V_v * S_w * b / l_v;
+% h_v = sqrt(AR_v * S_v);
+% 
+% %% Rudder Geometry from Vertical Tail
+% S_r = S_rOverS_v * S_v; % where S_rOverS_v 0.30-0.45, b_r = h_v, Epsilon_r_max = +-25-35 degrees
+% 
+% %% Crosswind Rudder Authority
+% 
+% Epsilon_r = -1 * (CnBetaOverCnEpsilonr) * Beta; 
 
 end
 

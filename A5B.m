@@ -6,4 +6,7 @@ data = AircraftScissorPlot(data);
 
 TrimAircraft(data); 
 
+data = ControlSurfaceSizing(data);
+data = StabilityDerivatives(data);
+
 end
