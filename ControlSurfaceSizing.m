@@ -16,7 +16,7 @@ CL_delta_e      = data.St_S * CL_delta_e_Tail;
 CM_delta_e      = CL_delta_e_Tail*data.St_S*(data.x_cg_design - data.x_ac) - CL_delta_e_Tail*data.V_H;
 CM_Alpha        = -data.CL_Alpha*data.SM;
 
-delta_e_flare = -1*((data.CM_0*data.CL_Alpha + CM_Alpha*(data.CL_max - data.CL_0)) / ...
+delta_e_flare = -1*((data.CM_ac_w*data.CL_Alpha + CM_Alpha*(data.CL_max - data.CL_0)) / ...
                      (data.CL_Alpha*CM_delta_e - CL_delta_e*CM_Alpha));
 delta_e_flare_deg = rad2deg(delta_e_flare);
 elevator_margin   = delta_e_limit - abs(delta_e_flare_deg);

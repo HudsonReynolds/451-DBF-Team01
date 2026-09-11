@@ -21,13 +21,17 @@ CM_Alpha = -data.CL_Alpha*data.SM;
 
 % compute the whole aircraft CM_0:
 
+CL_t0 = 0;
+
+CM_0 = data.CM_ac_w + data.CL_0 * (data.x_cg_design - data.x_ac) ...
+    / data.c_w - CL_t0 * data.St_S * (data.x_cg_design - data.x_ac) / data.c_w;
+
 %CM_AC,W + CL_W * (x_CG - x_AC,W / c_w) - CL_T * St/S * lt / c_w + CL_T * St/S * (x_CG - x_AC,W / c_w)
 
-
-Alpha_Trim = (data.CM_0*CL_delta_e + CM_delta_e * ...
+Alpha_Trim = (CM_0*CL_delta_e + CM_delta_e * ...
     (CL_Trim_range - data.CL_0)) ./ ...
     ((data.CL_Alpha * CM_delta_e) - (CL_delta_e * CM_Alpha));
-delta_e_trim = -1 * ((data.CM_0*data.CL_Alpha + CM_Alpha * (CL_Trim_range - data.CL_0)) / (data.CL_Alpha * CM_delta_e - CL_delta_e * CM_Alpha));
+delta_e_trim = -1 * ((CM_0*data.CL_Alpha + CM_Alpha * (CL_Trim_range - data.CL_0)) / (data.CL_Alpha * CM_delta_e - CL_delta_e * CM_Alpha));
 
 
 % draw the figure result:
@@ -66,13 +70,13 @@ hold on
 % Total CL splits between wing and tail: CL = CL_wing + St_S*CL_tail
 % Solving the two together for CL_wing(CL):
 
-K_tail = 1 / (pi*data.e*data.AR_tail);
+data.e_t = 0.7; % TODO: add this to excel!
 
-a = 1 + data.St_S*(data.x_cg_design - data.x_ac)/data.V_H;
-b = data.St_S*data.CM_0/data.V_H;
+K_tail = 1 / (pi*data.e_t*data.AR_tail);
 
-CL_Wing = (CL - b) ./ a;
-CL_Tail = (data.CM_0 + CL_Wing*(data.x_cg_design - data.x_ac)) / data.V_H;
+CL_Tail = (data.CM_ac_w + CL*(data.x_cg_design - data.x_ac)) / data.V_H;
+
+CL_Wing = CL - data.St_S * CL_Tail;
 
 %% The Trimmed Drag Polar
 CD_Trim = data.CD_0 + K*CL_Wing.^2 + data.St_S*K_tail*CL_Tail.^2;

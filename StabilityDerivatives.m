@@ -59,7 +59,7 @@ end
 % Dihedral effect on Cl_beta, via the same strip-theory approach used for
 % roll damping/roll control power in ControlSurfaceSizing.m -- shown as an
 % integral (not a memorized coefficient) so it's auditable:
-Gamma_dihedral_deg = 4; % PLACEHOLDER wing dihedral angle
+Gamma_dihedral_deg = 0; % PLACEHOLDER wing dihedral angle
 Gamma_dihedral = deg2rad(Gamma_dihedral_deg);
 
 y = linspace(0, b/2, 400);
