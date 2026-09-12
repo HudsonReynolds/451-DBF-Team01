@@ -74,13 +74,10 @@ end
 E_a = 0.25;                     % aileron chord fraction
 y1_frac = 0.7; y2_frac = 1;     % aileron span fractions of the semispan
 
-
 delta_a_limit = deg2rad(15);    % max aileron deflection
 V_roll = 1.3*data.V_S;          % design airspeed for the roll criterion
-% C_lp = -data.CL_Alpha_Wing/4;
-% CL_Epsilon_A
 
-pb_2V_target = 0.09;            % PLACEHOLDER roll-rate target -- state source (e.g. MIL-F-8785C Level 1)
+roll_rate_target_dps = 120;     % [deg/s] roll-rate target -- state source
 
 b = data.S_wing / data.c_wing;     % wingspan [m] -- rectangular wing (c_wing constant along span)
 y  = linspace(0, b/2, 400);
@@ -97,17 +94,72 @@ Cl_deltaA = (2*Cl_delta_local/(data.S_wing*b)) * trapz(y(mask), c_of_y(mask).*y(
 % Roll damping (Sadraey ch. 12 form) -- VERIFY exact leading coefficient against your text
 Cl_p = -4*(data.CL_Alpha_Wing + data.CD_0)/(data.S_wing*b^2) * trapz(y, c_of_y.*y.^2);
 
+% Convert the stated deg/s target into the equivalent pb/2V at V_roll -- this
+% line needs b, Cl_deltaA, and Cl_p to already exist, so it goes here, not
+% up near roll_rate_target_dps:
+pb_2V_target = deg2rad(roll_rate_target_dps)*b/(2*V_roll);
+
 pb_2V_achieved = -(Cl_deltaA/Cl_p)*delta_a_limit;
-p_roll = pb_2V_achieved*2*V_roll/b;
-roll_margin = pb_2V_achieved - pb_2V_target;
+p_roll_dps = rad2deg(pb_2V_achieved*2*V_roll/b);
+roll_margin_dps = p_roll_dps - roll_rate_target_dps;
 
 fprintf('--- Ailerons ---\n');
 fprintf('Span %.0f%%-%.0f%% semispan, chord fraction %.2f:\n', y1_frac*100, y2_frac*100, E_a);
-fprintf('  pb/2V achieved = %.4f (target %.4f), roll rate = %.1f deg/s at %.1f m/s\n', ...
-    pb_2V_achieved, pb_2V_target, rad2deg(p_roll), V_roll);
-if abs(roll_margin) < 0.005
+fprintf('  roll rate achieved = %.1f deg/s (target %.0f deg/s) at %.1f m/s, margin = %.1f deg/s\n', ...
+    p_roll_dps, roll_rate_target_dps, V_roll, roll_margin_dps);
+if abs(roll_margin_dps) < 2
     warning('Roll rate sits right on the target -- treat as a finding, not a pass.');
 end
+
+%% Original Code Swapped by Block Above to Meet 120 deg/s roll rate
+% delta_a_limit = deg2rad(15);    % max aileron deflection
+% V_roll = 1.3*data.V_S;          % design airspeed for the roll criterion
+% % C_lp = -data.CL_Alpha_Wing/4;
+% % CL_Epsilon_A
+% 
+% %pb_2V_target = 0.09;            % PLACEHOLDER roll-rate target -- state source (e.g. MIL-F-8785C Level 1)
+% roll_rate_target_dps = 120;     % [deg/s] roll-rate target -- state source
+% pb_2V_target = deg2rad(roll_rate_target_dps)*b/(2*V_roll);
+% 
+% pb_2V_achieved = -(Cl_deltaA/Cl_p)*delta_a_limit;
+% p_roll_dps = rad2deg(pb_2V_achieved*2*V_roll/b);
+% roll_margin_dps = p_roll_dps - roll_rate_target_dps;
+% 
+% fprintf('--- Ailerons ---\n');
+% fprintf('Span %.0f%%-%.0f%% semispan, chord fraction %.2f:\n', y1_frac*100, y2_frac*100, E_a);
+% fprintf('  roll rate achieved = %.1f deg/s (target %.0f deg/s) at %.1f m/s, margin = %.1f deg/s\n', ...
+%     p_roll_dps, roll_rate_target_dps, V_roll, roll_margin_dps);
+% if abs(roll_margin_dps) < 2
+%     warning('Roll rate sits right on the target -- treat as a finding, not a pass.');
+% end
+% 
+% 
+% b = data.S_wing / data.c_wing;     % wingspan [m] -- rectangular wing (c_wing constant along span)
+% y  = linspace(0, b/2, 400);
+% c_of_y = data.c_wing*ones(size(y)); % rectangular wing: no taper, so no taper approximation enters this integral
+% 
+% tau_a = (1/pi)*(acos(1-2*E_a) + 2*sqrt(E_a*(1-E_a))); % Glauert flap effectiveness (exact thin-airfoil result, bounded 0-1)
+% assert(tau_a >= 0 && tau_a <= 1, 'Aileron effectiveness out of bounds -- check E_a');
+% Cl_delta_local = data.CL_Alpha_Wing*tau_a;
+% 
+% y1 = y1_frac*b/2; y2 = y2_frac*b/2;
+% mask = (y >= y1) & (y <= y2);
+% Cl_deltaA = (2*Cl_delta_local/(data.S_wing*b)) * trapz(y(mask), c_of_y(mask).*y(mask));
+% 
+% % Roll damping (Sadraey ch. 12 form) -- VERIFY exact leading coefficient against your text
+% Cl_p = -4*(data.CL_Alpha_Wing + data.CD_0)/(data.S_wing*b^2) * trapz(y, c_of_y.*y.^2);
+% 
+% pb_2V_achieved = -(Cl_deltaA/Cl_p)*delta_a_limit;
+% p_roll = pb_2V_achieved*2*V_roll/b;
+% roll_margin = pb_2V_achieved - pb_2V_target;
+% 
+% fprintf('--- Ailerons ---\n');
+% fprintf('Span %.0f%%-%.0f%% semispan, chord fraction %.2f:\n', y1_frac*100, y2_frac*100, E_a);
+% fprintf('  pb/2V achieved = %.4f (target %.4f), roll rate = %.1f deg/s at %.1f m/s\n', ...
+%     pb_2V_achieved, pb_2V_target, rad2deg(p_roll), V_roll);
+% if abs(roll_margin) < 0.005
+%     warning('Roll rate sits right on the target -- treat as a finding, not a pass.');
+% end
 
 %% ---- Rudder: crosswind authority ----
 % Sarah Inputs:
@@ -142,7 +194,7 @@ fprintf('  delta_r required = %.2f deg (limit +-%.0f deg, margin = %.2f deg)\n',
     rad2deg(delta_r_required), rad2deg(delta_r_limit), rudder_margin);
 
 data.ControlSurfaces.Elevator = struct('E', data.E, 'delta_flare_deg', worst_deg, 'margin_deg', elevator_margin);
-data.ControlSurfaces.Aileron  = struct('E_a', E_a, 'y1_frac', y1_frac, 'y2_frac', y2_frac, 'pb_2V', pb_2V_achieved, 'roll_rate_dps', rad2deg(p_roll));
+data.ControlSurfaces.Aileron  = struct('E_a', E_a, 'y1_frac', y1_frac, 'y2_frac', y2_frac, 'pb_2V', pb_2V_achieved, 'roll_rate_dps', p_roll_dps);
 data.ControlSurfaces.Rudder   = struct('S_v', S_v, 'AR_v', AR_v, 'E_r', E_r, 'delta_r_deg', rad2deg(delta_r_required), 'margin_deg', rudder_margin);
 
 end
