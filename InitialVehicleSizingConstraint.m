@@ -14,7 +14,7 @@ function InitialVehicleSizingConstraint(data)
     
     %% Fourth Constraint: Maneuver Requirement
     q_m = 0.5 * data.rho * data.V_M^2;
-    W_P_m = data.eta_p ./ (q_m*data.V_M*(data.CD_0./W_S + data.K*(data.n/q_m)^2*W_S));
+    W_P_m = data.eta_p ./ (q_m*data.V_M*(data.CD_0./W_S + data.K_wing*(data.n/q_m)^2*W_S));
     
     %% Fifth Constaint: Takeoff Requirement
     numer = 1 - exp(0.6*data.rho*data.g*data.CD_G*data.S_TO*(1./W_S));

@@ -78,9 +78,9 @@ V_roll = 1.3*data.V_S;          % design airspeed for the roll criterion
 
 pb_2V_target = 0.09;            % PLACEHOLDER roll-rate target -- state source (e.g. MIL-F-8785C Level 1)
 
-b = data.S_wing / data.c_w;     % wingspan [m] -- rectangular wing (c_w constant along span)
+b = data.S_wing / data.c_wing;     % wingspan [m] -- rectangular wing (c_wing constant along span)
 y  = linspace(0, b/2, 400);
-c_of_y = data.c_w*ones(size(y)); % rectangular wing: no taper, so no taper approximation enters this integral
+c_of_y = data.c_wing*ones(size(y)); % rectangular wing: no taper, so no taper approximation enters this integral
 
 tau_a = (1/pi)*(acos(1-2*E_a) + 2*sqrt(E_a*(1-E_a))); % Glauert flap effectiveness (exact thin-airfoil result, bounded 0-1)
 assert(tau_a >= 0 && tau_a <= 1, 'Aileron effectiveness out of bounds -- check E_a');

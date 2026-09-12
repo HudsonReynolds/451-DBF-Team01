@@ -47,36 +47,29 @@ xlabel('Trim $C_L$')
 ylabel('$\delta_{\mathrm{e,trim}}$ [deg]')
 
 %% Trim Drag
-K = 1 / (pi*data.AR*data.e);
-
 % compute the drag polar over a range of lift coefficients:
-CL = linspace(-1.5,1.5);
-
-CD_Clean = data.CD_0 + K*CL.^2;
+CL = linspace(0, data.CL_max);
+CD_clean = data.CD_0 + data.K_wing*CL.^2;
 
 % plot the clean drag polar and trim 
 figure('Name','Drag Polars')
-plot(CL,CD_Clean, 'DisplayName', 'Clean Drag Polar')
-xlabel('Lift Coefficient [-]')
-ylabel('Drag Coefficient [-]')
-
+plot(CD_clean, CL, 'DisplayName', 'Clean Drag Polar')
+xlabel('Drag Coefficient [-]')
+ylabel('Lift Coefficient [-]')
+title('Drag Polars')
 hold on
 
 %% Tail Lift Required to Trim ---- Beginning of CLAUDE CODE
 % Moment balance about the CG: CM_0 + CL_wing*(x_cg - x_ac) - V_H*CL_tail = 0
 % Total CL splits between wing and tail: CL = CL_wing + St_S*CL_tail
 % Solving the two together for CL_wing(CL):
-
-K_tail = 1 / (pi*data.e_t*data.AR_tail);
-
-CL_Tail = (data.CM_ac_w + CL*(data.x_cg_design - data.x_ac)) / data.V_H;
-
-CL_Wing = CL - data.St_S * CL_Tail;
+CL_hstab = (data.CM_ac_w + CL*(data.x_cg_design - data.x_ac)) / data.V_H;
+CL_wing = CL - data.St_S * CL_hstab;
 
 %% The Trimmed Drag Polar
-CD_Trim = data.CD_0 + K*CL_Wing.^2 + data.St_S*K_tail*CL_Tail.^2;
+CD_trim = data.CD_0 + data.K_wing*CL_wing.^2 + data.St_S*data.K_hstab*CL_hstab.^2;
 
-plot(CL, CD_Trim, '--', 'DisplayName', 'Trimmed Drag Polar')
+plot(CD_trim, CL, '--', 'DisplayName', 'Trimmed Drag Polar')
 legend('Location','best')
 
 %% End of Claude Code ----
