@@ -54,10 +54,11 @@ CD_clean = data.CD_0 + data.K_wing*CL.^2;
 % plot the clean drag polar and trim 
 figure('Name','Drag Polars')
 plot(CD_clean, CL, 'DisplayName', 'Clean Drag Polar')
-xlabel('Drag Coefficient [-]')
-ylabel('Lift Coefficient [-]')
-title('Drag Polars')
+xlabel('$C_D$')
+ylabel('$C_L$')
+title('Drag Polar')
 hold on
+exportgraphics(gcf, 'clean_drag_polar.png', 'Resolution', 300);
 
 %% Tail Lift Required to Trim ---- Beginning of CLAUDE CODE
 % Moment balance about the CG: CM_0 + CL_wing*(x_cg - x_ac) - V_H*CL_tail = 0
@@ -71,7 +72,7 @@ CD_trim = data.CD_0 + data.K_wing*CL_wing.^2 + data.St_S*data.K_hstab*CL_hstab.^
 
 plot(CD_trim, CL, '--', 'DisplayName', 'Trimmed Drag Polar')
 legend('Location','best')
-
+exportgraphics(gcf, 'trimmed_drag_polar.png', 'Resolution', 300);
 %% End of Claude Code ----
 
 
