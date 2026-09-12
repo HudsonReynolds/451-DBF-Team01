@@ -65,10 +65,12 @@ CD_0_misc = data.CD_0_misc_factor * CD_0_comp
 CD_0 = CD_0_comp + CD_0_misc
 
 %% L/D
-
+CL = linspace(0, data.CL_max);
+CD = CD_0 + data.K_wing.*CL.^2;
+L_D = CL ./ CD;
 L_D_cruise = data.CL_C / (CD_0 + data.K_wing*data.CL_C^2)
-L_D = 
-L_D_max = 1 / (2*sqrt(data.K_wing * CD_0))
+L_D_max = max(L_D)
+CL_max_LD = CL(L_D==L_D_max)
 
 end
 
