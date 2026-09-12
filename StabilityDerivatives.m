@@ -34,7 +34,7 @@ if CM_Alpha > 0
 end
 
 %% ---- Lateral-directional: Cn_beta, Cl_beta ----
-b = data.S_wing/data.c_w; % wingspan [m], rectangular wing
+b = data.S_wing/data.c_wing; % wingspan [m], rectangular wing
 
 % Vertical tail geometry -- duplicated from ControlSurfaceSizing.m, PLACEHOLDER,
 % keep these two files in sync until they're pulled into `data`/Excel.
@@ -63,7 +63,7 @@ Gamma_dihedral_deg = 0;
 Gamma_dihedral = deg2rad(Gamma_dihedral_deg);
 
 y = linspace(0, b/2, 400);
-c_of_y = data.c_w*ones(size(y)); % rectangular wing, no taper
+c_of_y = data.c_wing*ones(size(y)); % rectangular wing, no taper
 
 Cl_beta_dihedral    = -2*Gamma_dihedral*data.CL_Alpha_Wing/(data.S_wing*b) * trapz(y, c_of_y.*y);
 Cl_beta_no_dihedral = 0; % wing-alone, zero-dihedral baseline for comparison

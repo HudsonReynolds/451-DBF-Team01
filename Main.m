@@ -38,5 +38,8 @@ InitialVehicleSizingConstraint(data);
  
 data.W = VehicleWeightEstimation(data);
 
+% Drag build-up
+data.CD_0 = DragBuildUp(data);
+
 % stabilility analysis
 A5B(data);

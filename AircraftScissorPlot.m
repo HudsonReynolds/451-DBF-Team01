@@ -3,12 +3,12 @@ function data = AircraftScissorPlot(data)
 % basic script for computing a scissor plot of the aircraft:
 
 winglength = 1.5;
-S_w = winglength*data.c_w;
-AR_wing = winglength/data.c_w;
+S_w = winglength*data.c_wing;
+AR_wing = winglength/data.c_wing;
 x_ac = 0.25;
 CM_0 = -0.08;
 
-data.CL_Alpha_Tail = CalcLiftSlope(data.AR_tail, 6.29);
+data.CL_Alpha_Tail = CalcLiftSlope(data.AR_hstab, 6.29);
 data.CL_Alpha_Wing = CalcLiftSlope(AR_wing);
 
 % Downwash Gradient
@@ -36,7 +36,7 @@ CM_EquivalentRotate = 0.1;
 
 % Takeoff Rotation
 St_S_takeoff = (CM_0 + data.CL_R .* (x_cg - x_ac) - CM_EquivalentRotate) ./...
-    (CLNoseUp_Tail .* ((data.l_t / data.c_w) - x_cg + x_ac));
+    (CLNoseUp_Tail .* ((data.l_t / data.c_wing) - x_cg + x_ac));
 
 % Stall Recovery
 CM_requiredRecovery = -data.CL_max*data.SM + CM_0;
@@ -46,16 +46,16 @@ alpha_stall = deg2rad(15.8);
 CL_NoseDown_Tail = data.CL_Alpha_Tail*alpha_stall;
 
 St_S_stall = (CM_0 + data.CL_max .* (x_cg - x_ac) - CM_requiredRecovery) ./...
-    (CL_NoseDown_Tail * ((data.l_t / data.c_w) - x_cg + x_ac));
+    (CL_NoseDown_Tail * ((data.l_t / data.c_wing) - x_cg + x_ac));
 
 % stability limit:
-St_S_stability = (x_cg - x_ac + data.SM) ./ ((1-de_da)*data.l_t/data.c_w - (x_cg - x_ac + data.SM));
+St_S_stability = (x_cg - x_ac + data.SM) ./ ((1-de_da)*data.l_t/data.c_wing - (x_cg - x_ac + data.SM));
 
 % TODO: design parameters from this (EXCEL)?
 data.St_S = 0.23;
 
 % TODO: choose the chord of the tail:
-data.V_H = data.St_S*data.l_t/data.c_w;
+data.V_H = data.St_S*data.l_t/data.c_wing;
 
 data.x_cg_fwd = interp1(St_S_takeoff, x_cg, data.St_S);
 data.x_cg_aft = interp1(St_S_stability, x_cg, data.St_S);
