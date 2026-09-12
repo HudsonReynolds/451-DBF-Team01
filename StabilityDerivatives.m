@@ -37,13 +37,11 @@ end
 b = data.S_wing/data.c_wing; % wingspan [m], rectangular wing
 
 % Vertical tail geometry -- duplicated from ControlSurfaceSizing.m, PLACEHOLDER,
-% keep these two files in sync until they're pulled into `data`/Excel.
-V_v  = 0.04;
+% keep these two files in sync until they're pulled into `data`/Excel. 
 AR_v = 1.5;
-l_v  = data.l_t;
 CL_Alpha_VT = CalcLiftSlope(AR_v, 6.29);
 
-Cn_beta_VT = CL_Alpha_VT*V_v; % vertical-tail-alone contribution
+Cn_beta_VT = CL_Alpha_VT*data.V_v; % vertical-tail-alone contribution
 Cn_beta    = Cn_beta_VT;      % fuselage/wing terms neglected -- PLACEHOLDER, see note above
 
 Cn_beta_stable_range = [0.05, 0.15]; % /rad, typical light GA/RC aircraft -- verify against Sadraey's tables
@@ -66,12 +64,8 @@ y = linspace(0, b/2, 400);
 c_of_y = data.c_wing*ones(size(y)); % rectangular wing, no taper
 
 Cl_beta_dihedral    = -2*Gamma_dihedral*data.CL_Alpha_Wing/(data.S_wing*b) * trapz(y, c_of_y.*y);
-Cl_beta_no_dihedral = 0; % wing-alone, zero-dihedral baseline for comparison
 
-df = .1; % body depth at the wing
-zw = .04; %wing root height
-
-Cl_beta = -1.2 * sqrt(data.AR) * zw / data.Wingspan * 2 * 1 * 1 * 1 * df / data.Wingspan;
+Cl_beta = -1.2 * sqrt(data.AR) * data.zw / data.wingspan * 2 * data.df / data.wingspan;
 
 Cl_beta_stable_range = [-0.20, -0.05]; % /rad, typical light GA/RC aircraft -- verify against Sadraey's tables
 

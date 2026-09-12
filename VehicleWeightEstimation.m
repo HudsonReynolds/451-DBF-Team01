@@ -62,7 +62,7 @@ W_We = W - data.W_e_frac*W;
 Weight = W(idx);
 Weight_y = W_We(idx);
 
-figure();
+figure('Name','Total Vehicle Weight Estimate');
 plot(W,W_batt_payload,'g', 'DisplayName', '$W_B + W_P$')
 hold on
 plot(W,W_We,'b', 'DisplayName', '$W - W_e$')
@@ -88,7 +88,7 @@ energyLossPercentage = energyLost/totEnergyRequiredByBatt * 100
 
 pieChart_vals = [W_pay,totBatteryWeight,Weight - W_pay - totBatteryWeight];
 
-figure();
+figure('Name','Payload, Battery, Vehicle Weight Pie Chart');
 piechart(pieChart_vals,["Payload Weight","Battery Weight", "Empty Weight"])
 
 % calculate the energy margin:

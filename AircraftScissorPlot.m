@@ -60,11 +60,11 @@ data.x_cg_aft = interp1(St_S_stability, x_cg, data.St_S);
 % Neutral Point Calculation
 one_minus_deda = (data.CL_Alpha - data.CL_Alpha_Wing)/data.CL_Alpha_Tail;
 x_n = data.x_ac + (data.CL_Alpha_Tail*one_minus_deda*data.V_H) / ...
-      (data.CL_Alpha_Wing + data.St_S*data.CL_Alpha_Tail*one_minus_deda);
+      (data.CL_Alpha_Wing + data.St_S*data.CL_Alpha_Tail*one_minus_deda)
 
 data.x_cg_design = x_n - data.SM;
 
-figure;
+figure('Name','Aircraft Scissor Plot');
 plot(x_cg, St_S_takeoff, 'DisplayName', 'Forward Limit (Takeoff)')
 hold on
 plot(x_cg, St_S_stall, 'DisplayName', 'Stall Limit')

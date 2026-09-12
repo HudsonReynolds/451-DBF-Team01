@@ -5,7 +5,7 @@ function data = ControlSurfaceSizing(data)
 %   - delta_e_limit, delta_a_limit, delta_r_limit : mechanical travel limits
 %   - E_a, y1_frac, y2_frac                        : aileron chord/span fractions
 %   - pb_2V_target, V_roll                         : roll rate target + design airspeed + SOURCE
-%   - V_v, AR_v, E_r                               : vertical tail geometry, rudder chord fraction
+%   - data.V_v, AR_v, E_r                               : vertical tail geometry, rudder chord fraction
 %   - crosswind_ratio                              : design crosswind, V_xwind/V_TO
 
 %% ---- Elevator: trim envelope plot (matches the assignment's example figure) ----
@@ -69,8 +69,12 @@ end
 
 
 %% ---- Ailerons: roll-rate authority ----
+
+% Sarah Inputs
 E_a = 0.25;                     % aileron chord fraction
 y1_frac = 0.7; y2_frac = 1;     % aileron span fractions of the semispan
+
+
 delta_a_limit = deg2rad(15);    % max aileron deflection
 V_roll = 1.3*data.V_S;          % design airspeed for the roll criterion
 % C_lp = -data.CL_Alpha_Wing/4;
@@ -106,14 +110,18 @@ if abs(roll_margin) < 0.005
 end
 
 %% ---- Rudder: crosswind authority ----
-V_v = 0.04*2;                 % vertical tail volume coefficient -- PLACEHOLDER, cite a source table
-AR_v = 1.5;                   % vertical tail aspect ratio -- PLACEHOLDER
+% Sarah Inputs:
+Sv_Sw = data.V_v * data.wingspan / data.l_t;
+Sv = Sv_Sw * data.S_wing;
 E_r = 0.30;                   % rudder chord fraction -- PLACEHOLDER
+AR_v = 1.5;                   % vertical tail aspect ratio -- PLACEHOLDER
+
+
 delta_r_limit = deg2rad(20);  % PLACEHOLDER max rudder deflection
 crosswind_ratio = 0.2;        % V_crosswind/V_TO -- PLACEHOLDER, state design ratio
 
 l_v = data.l_t; % assume the vertical tail shares the horizontal tail's moment arm -- PLACEHOLDER
-S_v = V_v*data.S_wing*b/l_v;
+S_v = data.V_v*data.S_wing*b/l_v;
 h_v = sqrt(AR_v*S_v);
 
 CL_Alpha_VT = CalcLiftSlope(AR_v, 6.29); % assumes same tail airfoil selection as the horizontal stabiliser
@@ -121,8 +129,8 @@ CL_Alpha_VT = CalcLiftSlope(AR_v, 6.29); % assumes same tail airfoil selection a
 tau_r = (1/pi)*(acos(1-2*E_r) + 2*sqrt(E_r*(1-E_r)));
 assert(tau_r >= 0 && tau_r <= 1, 'Rudder effectiveness out of bounds -- check E_r');
 
-Cn_beta_VT = CL_Alpha_VT*V_v;         % vertical-tail-alone contribution (fuselage/wing terms belong in D5)
-Cn_delta_r = -CL_Alpha_VT*V_v*tau_r;
+Cn_beta_VT = CL_Alpha_VT*data.V_v;         % vertical-tail-alone contribution (fuselage/wing terms belong in D5)
+Cn_delta_r = -CL_Alpha_VT*data.V_v*tau_r;
 
 beta_crosswind = asin(crosswind_ratio);
 delta_r_required = -(Cn_beta_VT/Cn_delta_r)*beta_crosswind;

@@ -33,7 +33,7 @@ function InitialVehicleSizingConstraint(data)
     x_fill = x_fill(:);
     y_fill = lower_envelope(mask);
     
-    figure();
+    figure('Name','Aicraft Constraint Diagram');
     
     % Fill region down to y = 0
     fill([x_fill; flipud(x_fill)], [y_fill; zeros(size(y_fill))], [0.8 0.6 0.7], ...
