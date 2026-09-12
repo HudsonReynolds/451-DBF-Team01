@@ -51,9 +51,6 @@ St_S_stall = (CM_0 + data.CL_max .* (x_cg - x_ac) - CM_requiredRecovery) ./...
 % stability limit:
 St_S_stability = (x_cg - x_ac + data.SM) ./ ((1-de_da)*data.l_t/data.c_wing - (x_cg - x_ac + data.SM));
 
-% TODO: design parameters from this (EXCEL)?
-data.St_S = 0.23;
-
 % TODO: choose the chord of the tail:
 data.V_H = data.St_S*data.l_t/data.c_wing;
 
