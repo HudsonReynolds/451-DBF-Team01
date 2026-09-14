@@ -57,15 +57,21 @@ end
 % Dihedral effect on Cl_beta, via the same strip-theory approach used for
 % roll damping/roll control power in ControlSurfaceSizing.m -- shown as an
 % integral (not a memorized coefficient) so it's auditable:
-Gamma_dihedral_deg = 0;
+Gamma_dihedral_deg = 4;
+
 Gamma_dihedral = deg2rad(Gamma_dihedral_deg);
 
 y = linspace(0, b/2, 400);
 c_of_y = data.c_wing*ones(size(y)); % rectangular wing, no taper
 
-Cl_beta_dihedral    = -2*Gamma_dihedral*data.CL_Alpha_Wing/(data.S_wing*b) * trapz(y, c_of_y.*y);
+Cl_beta_dihedral = -0.5 * Gamma_dihedral * data.CL_Alpha_Wing;
 
-Cl_beta = -1.2 * sqrt(data.AR) * data.zw / data.wingspan * 2 * data.df / data.wingspan;
+
+% Initial Claude Initialization
+% 2*Gamma_dihedral*data.CL_Alpha_Wing/(data.S_wing*b) * trapz(y,c_of_y.*y);
+
+
+Cl_beta = (-1.2 * sqrt(data.AR) * data.zw / data.wingspan * 2 * data.df / data.wingspan) + Cl_beta_dihedral;
 
 Cl_beta_stable_range = [-0.20, -0.05]; % /rad, typical light GA/RC aircraft -- verify against Sadraey's tables
 
