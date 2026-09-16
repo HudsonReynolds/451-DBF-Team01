@@ -1,7 +1,7 @@
 function InitialVehicleSizingConstraint(data)
     %% First Constraint: Stall Speed
     % this determines the range of values to consider for W/S:
-    W_S_max = 0.5*data.rho*data.V_S^2*data.CL_max; 
+    W_S_max = 0.5*params.env.rho*data.V_S^2*params.aero.CL_max; 
     W_S = 0:W_S_max;
     
     %% Second Constraint: Cruise Speed
