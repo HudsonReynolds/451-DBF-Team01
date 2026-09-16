@@ -1,4 +1,4 @@
-function outputs = ControlSurfaceSizing(params)
+function [outputs, params] = ControlSurfaceSizing(params)
 % Deliverable 4 - Control surface sizing & authority (elevator, aileron, rudder)
 %
 % PLACEHOLDER ASSUMPTIONS to reconcile with the team's RFP/design choices:

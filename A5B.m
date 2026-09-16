@@ -4,7 +4,7 @@ function A5B(params)
 
 params = AircraftScissorPlot(params);
 params = TrimAircraft(params); 
-params = ControlSurfaceSizing(params);
+[outputs, params] = ControlSurfaceSizing(params);
 params = StabilityDerivatives(params);
 
 end
