@@ -1,32 +1,33 @@
-function Weight = VehicleWeightEstimation(data)
+function Weight = VehicleWeightEstimation(params)
 
-T_LF = (2*200.73)/data.V_C;
-T_TU = (2*pi*50)/data.V_M;
+T_LF = (2*200.73)/params.performance.V_C;
+T_TU = (2*pi*50)/params.performance.V_M;
 
+% TODO: All of these in the excel
 rho_battery = 5.27E5; %Joule / kg
 eta_m = 0.7; % revisit motor efficiency
 P_m = eta_m * 1000; % revisit, might determined based off W/P; motor efficiency times 1kW battery
 
-T_CL = sqrt(100^2+30^2) / (data.V_TO); 
-T_TO = 25 / data.V_TO * 2; % multiple by 2 for average speed during accelerating takeoff.
+T_CL = sqrt(100^2+30^2) / (params.performance.V_TO); 
+T_TO = 25 / params.performance.V_TO * 2; % multiple by 2 for average speed during accelerating takeoff.
 warmupN = 10;
 
 %% Energy Consumption in Level Flight
-LevelFlightBatteryWeightFraction = data.V_C * T_LF * data.g / (data.L_D_max) / data.eta_p / eta_m / rho_battery; %might want to change the L/DMax
+LevelFlightBatteryWeightFraction = params.performance.V_C * T_LF * params.env.g / (params.aero.L_D_max) / params.prop.eta_p / eta_m / rho_battery; %might want to change the L/DMax
 
 %% Energy Consumption in Turning Flight
-TurningBatteryWeightFraction = data.V_M * T_TU * data.n * data.g / (data.L_D_max) / data.eta_p / eta_m / rho_battery;%might want to change the L/DMax
+TurningBatteryWeightFraction = params.performance.V_M * T_TU * params.performance.n * params.env.g / (params.aero.L_D_max) / params.prop.eta_p / eta_m / rho_battery;%might want to change the L/DMax
 
 %% Energy Consumption in Climbing Flight
 %ClimbEnergyRequired = data.V_TO * W * T_CL * (cos(deg2rad(data.gamma)) / (data.L_D_max*.866) + sin(deg2rad(data.gamma)));
 
-ClimbBatteryWeightFraction = data.V_TO * T_CL * data.g * (cos(deg2rad(data.gamma)) / (data.L_D_max*.866) + sin(deg2rad(data.gamma))) / data.eta_p / eta_m / rho_battery;%might want to change the L/DMax
+ClimbBatteryWeightFraction = params.performance.V_TO * T_CL * params.env.g * (cos(deg2rad(params.performance.gamma)) / (params.aero.L_D_max*.866) + sin(deg2rad(params.performance.gamma))) / params.prop.eta_p / eta_m / rho_battery;%might want to change the L/DMax
 
 %% Energy Consumption during Warmup and Takeoff
 TakeoffEnergyRequired = P_m / eta_m * T_TO;
 
 %% Battery Weight Fraction for Takeoff
-TakeOffBatteryWeightFraction = T_TO * data.g / (eta_m * data.eta_p_TO * (data.W_P_design) * rho_battery); %gravity??
+TakeOffBatteryWeightFraction = T_TO * params.env.g / (eta_m * params.prop.eta_p_TO * (params.performance.W_P_design) * rho_battery); %gravity??
 
 %% Battery Weight Fraction for Warmup
 WarmUpBatteryWeightFraction = warmupN * TakeOffBatteryWeightFraction; %clarify W or not
@@ -55,7 +56,7 @@ W = linspace(1,7,100); % range of values [kg]
 W_batt_payload = (BatteryWeightFraction)*W + W_pay;
 
 
-W_We = W - data.W_e_frac*W;
+W_We = W - params.performance.W_e_frac*W;
 
 % find the intersection of these lines for the empty weight:
 [~,idx] = min(abs(W_batt_payload-W_We));
@@ -78,7 +79,7 @@ totBatteryEnergy = totBatteryWeight * rho_battery
 
 totEnergyRequiredByPlane = BatteryWeightFractionPlane * Weight * rho_battery
 
-totEnergyRequiredByBatt = totEnergyRequiredByPlane / (data.eta_p*eta_m)
+totEnergyRequiredByBatt = totEnergyRequiredByPlane / (params.prop.eta_p*eta_m)
 
 energyLost = (1-useableCapacity*temp_derate)*totEnergyRequiredByBatt
 

@@ -1,19 +1,20 @@
-% this script runs all of the scripts for the aircraft sizing:
+% Main script: Run all of the sizing and analysis in one place. 
+
+
 clear;clc;close all
 
 Setup() % setup plotting & paths for everything
 
 params = readParams("SizingParams.xlsx");
 
-
-
 % run all of the sizing:
-InitialVehicleSizingConstraint(data);
+InitialVehicleSizingConstraint(params);
  
-data.W = VehicleWeightEstimation(data);
+% TODO: Weight is both in the excel and here. UPDATE
+params.W = VehicleWeightEstimation(params);
 
 % Drag build-up
-data.CD_0 = DragBuildUp(data);
+data.CD_0 = DragBuildUp(params);
 
 % stabilility analysis
 A5B(data);
