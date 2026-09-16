@@ -61,7 +61,7 @@ params.geometry.data.x_cg_aft = interp1(St_S_stability, x_cg, params.geometry.St
 
 % Neutral Point Calculation
 one_minus_deda = (params.aero.CL_Alpha - params.aero.CL_Alpha_Wing)/params.aero.CL_Alpha_Tail;
-x_n = data.x_ac + (params.aero.CL_Alpha_Tail*one_minus_deda*data.V_H) / ...
+x_n = params.geometry.x_ac + (params.aero.CL_Alpha_Tail*one_minus_deda*data.V_H) / ...
       (params.aero.CL_Alpha_Wing + params.geometry.St_S*params.aero.CL_Alpha_Tail*one_minus_deda);
 
 %initialization parameter

@@ -14,7 +14,7 @@ InitialVehicleSizingConstraint(params);
 params.W = VehicleWeightEstimation(params);
 
 % Drag build-up
-data.CD_0 = DragBuildUp(params);
+params.CD_0 = DragBuildUp(params);
 
 % stabilility analysis
-A5B(data);
+A5B(params);
