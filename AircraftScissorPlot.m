@@ -5,6 +5,8 @@ function params = AircraftScissorPlot(params)
 winglength = 1.5;
 AR_wing = winglength/params.geometry.c_wing;
 x_ac = 0.25;
+
+% TODO: UPDATE CM_0
 CM_0 = -0.08;
 
 % generating these new parameters.
@@ -53,15 +55,15 @@ St_S_stall = (CM_0 + params.aero.CL_max .* (x_cg - x_ac) - CM_requiredRecovery) 
 St_S_stability = (x_cg - x_ac + params.geometry.SM) ./ ((1-de_da)*params.geometry.l_t/params.geometry.c_wing - (x_cg - x_ac + params.geometry.SM));
 
 % TODO: choose the chord of the tail:
-data.V_H = params.geometry.St_S*params.geometry.l_t/params.geometry.c_wing;
+params.geometry.V_H = params.geometry.St_S*params.geometry.l_t/params.geometry.c_wing;
 
 %initialization of parameters
 params.geometry.x_cg_fwd = interp1(St_S_takeoff, x_cg, params.geometry.St_S);
-params.geometry.data.x_cg_aft = interp1(St_S_stability, x_cg, params.geometry.St_S);
+params.geometry.x_cg_aft = interp1(St_S_stability, x_cg, params.geometry.St_S);
 
 % Neutral Point Calculation
 one_minus_deda = (params.aero.CL_Alpha - params.aero.CL_Alpha_Wing)/params.aero.CL_Alpha_Tail;
-x_n = params.geometry.x_ac + (params.aero.CL_Alpha_Tail*one_minus_deda*data.V_H) / ...
+x_n = params.geometry.x_ac + (params.aero.CL_Alpha_Tail*one_minus_deda*params.geometry.V_H) / ...
       (params.aero.CL_Alpha_Wing + params.geometry.St_S*params.aero.CL_Alpha_Tail*one_minus_deda);
 
 %initialization parameter
@@ -74,7 +76,7 @@ plot(x_cg, St_S_stall, 'DisplayName', 'Stall Limit')
 plot(x_cg,St_S_stability,'DisplayName','Stability Limit')
 xlabel('$\bar{x}_{cg}$');
 ylabel('$\frac{Sh}{S}$');
-yline(data.St_S, 'b--', 'DisplayName', 'Chosen Wing to Tail Ratio')
+yline(params.geometry.St_S, 'b--', 'DisplayName', 'Chosen Wing to Tail Ratio')
 title('Aircraft Tail Scissor Plot');
 legend('Location','northwest')
 

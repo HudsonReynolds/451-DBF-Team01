@@ -1,4 +1,4 @@
-function data = TrimAircraft(data)
+function params = TrimAircraft(params)
 
 %% Two Equation Trim:
 % Here, we look over a range of values for CL_trim, which gives a range of
@@ -7,29 +7,29 @@ function data = TrimAircraft(data)
 CL_Trim_range = linspace(-.3,1.5);
 
 % compute elevator deflection lift 
-CL_delta_e_Tail = data.CL_Alpha_Tail/pi * ...
-    (acos(1-2*data.E) + 2*sqrt(data.E*(1-data.E)));
+CL_delta_e_Tail = params.aero.CL_Alpha_Tail/pi * ...
+    (acos(1-2*params.geometry.E) + 2*sqrt(params.geometry.E*(1-params.geometry.E)));
 
-CL_delta_e = data.St_S * CL_delta_e_Tail;
+CL_delta_e = params.geometry.St_S * CL_delta_e_Tail;
 
 % compute elevator deflection moment:
-CM_delta_e = CL_delta_e_Tail*data.St_S*(data.x_cg_design - data.x_ac) - CL_delta_e_Tail * data.V_H;
+CM_delta_e = CL_delta_e_Tail*params.geometry.St_S*(params.geometry.x_cg_design - params.geometry.x_ac) - CL_delta_e_Tail * params.geometry.V_H;
 
 % % compute the whole aircraft CM_alpha:
-CM_Alpha = -data.CL_Alpha*data.SM;
+CM_Alpha = -params.aero.CL_Alpha*params.geometry.SM;
 
 % compute the whole aircraft CM_0:
 CL_t0 = 0;
 
-data.CM_0 = data.CM_ac_w + data.CL_0 * (data.x_cg_design - data.x_ac)...
-    - CL_t0 * data.St_S * (data.x_cg_design - data.x_ac);
+params.aero.CM_0 = params.aero.CM_ac_w + params.aero.CL_0 * (params.geometry.x_cg_design - params.geometry.x_ac)...
+    - CL_t0 * params.geometry.St_S * (params.geometry.x_cg_design - params.geometry.x_ac);
 
 %CM_AC,W + CL_W * (x_CG - x_AC,W / c_w) - CL_T * St/S * lt / c_w + CL_T * St/S * (x_CG - x_AC,W / c_w)
 
-Alpha_Trim = (data.CM_0*CL_delta_e + CM_delta_e * ...
-    (CL_Trim_range - data.CL_0)) ./ ...
-    ((data.CL_Alpha * CM_delta_e) - (CL_delta_e * CM_Alpha));
-delta_e_trim = -1 * ((data.CM_0*data.CL_Alpha + CM_Alpha * (CL_Trim_range - data.CL_0)) / (data.CL_Alpha * CM_delta_e - CL_delta_e * CM_Alpha));
+Alpha_Trim = (params.aero.CM_0*CL_delta_e + CM_delta_e * ...
+    (CL_Trim_range - params.aero.CL_0)) ./ ...
+    ((params.aero.CL_Alpha * CM_delta_e) - (CL_delta_e * CM_Alpha));
+delta_e_trim = -1 * ((params.aero.CM_0*params.aero.CL_Alpha + CM_Alpha * (CL_Trim_range - params.aero.CL_0)) / (params.aero.CL_Alpha * CM_delta_e - CL_delta_e * CM_Alpha));
 
 % draw the figure result:
 figure('Name','Aircraft Trim v. Trim CL')
@@ -48,8 +48,8 @@ ylabel('$\delta_{\mathrm{e,trim}}$ [deg]')
 
 %% Trim Drag
 % compute the drag polar over a range of lift coefficients:
-CL = linspace(0, data.CL_max);
-CD_clean = data.CD_0 + data.K_wing*CL.^2;
+CL = linspace(0, params.aero.CL_max);
+CD_clean = params.aero.CD_0 + params.aero.K_wing*CL.^2;
 
 % plot the clean drag polar and trim 
 figure('Name','Drag Polars')
@@ -64,11 +64,11 @@ exportgraphics(gcf, 'clean_drag_polar.png', 'Resolution', 300);
 % Moment balance about the CG: CM_0 + CL_wing*(x_cg - x_ac) - V_H*CL_tail = 0
 % Total CL splits between wing and tail: CL = CL_wing + St_S*CL_tail
 % Solving the two together for CL_wing(CL):
-CL_hstab = (data.CM_ac_w + CL*(data.x_cg_design - data.x_ac)) / data.V_H;
-CL_wing = CL - data.St_S * CL_hstab;
+CL_hstab = (params.aero.CM_ac_w + CL*(params.geometry.x_cg_design - params.geometry.x_ac)) / params.geometry.V_H;
+CL_wing = CL - params.geometry.St_S * CL_hstab;
 
 %% The Trimmed Drag Polar
-CD_trim = data.CD_0 + data.K_wing*CL_wing.^2 + data.St_S*data.K_hstab*CL_hstab.^2;
+CD_trim = params.aero.CD_0 + params.aero.K_wing*CL_wing.^2 + params.geometry.St_S*params.aero.K_hstab*CL_hstab.^2;
 
 plot(CD_trim, CL, '--', 'DisplayName', 'Trimmed Drag Polar')
 legend('Location','best')

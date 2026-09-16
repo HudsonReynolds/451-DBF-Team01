@@ -1,10 +1,10 @@
-function A5B(data)
+function A5B(params)
 
 % top level control plot
 
-data = AircraftScissorPlot(data);
-data = TrimAircraft(data); 
-data = ControlSurfaceSizing(data);
-data = StabilityDerivatives(data);
+params = AircraftScissorPlot(params);
+params = TrimAircraft(params); 
+params = ControlSurfaceSizing(params);
+params = StabilityDerivatives(params);
 
 end

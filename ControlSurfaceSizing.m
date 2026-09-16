@@ -21,7 +21,7 @@ CL_delta_e      = params.geometry.St_S * CL_delta_e_Tail;
 % margin -- and therefore CM_alpha -- is recomputed per CG case instead
 % of reusing a single fixed data.SM:
 one_minus_deda = (params.aero.CL_Alpha - params.aero.CL_Alpha_Wing)/params.aero.CL_Alpha_Tail;
-x_n = params.geometry.x_ac + (params.aero.CL_Alpha_Tail*one_minus_deda*params.performance.V_H) / ...
+x_n = params.geometry.x_ac + (params.aero.CL_Alpha_Tail*one_minus_deda*params.geometry.V_H) / ...
       (params.aero.CL_Alpha_Wing + params.geometry.St_S*params.aero.CL_Alpha_Tail*one_minus_deda);
 
 CL_range = linspace(-0.3, params.aero.CL_max, 200);
