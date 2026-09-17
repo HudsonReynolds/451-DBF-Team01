@@ -1,14 +1,6 @@
 function outputs = StabilityDerivatives(params)
-% Deliverable 5 - Longitudinal and lateral-directional stability derivatives
-%
-% PLACEHOLDER ASSUMPTIONS to reconcile:
-%   - Gamma_dihedral_deg : wing dihedral angle -- not yet a design choice anywhere else
-%   - V_v, AR_v          : vertical tail geometry -- duplicated from ControlSurfaceSizing.m,
-%                           factor these into `data` once finalized so the two files agree
-%   - Cn_beta here omits fuselage/wing contributions (usually destabilizing/negative for
-%     the fuselage) -- vertical-tail-alone value is a first-pass, not the final number
 
-%% ---- Longitudinal: CL_alpha, CM_alpha ----
+% ---- Longitudinal: CL_alpha, CM_alpha ----
 % params.aero.CL_Alpha (whole-aircraft, 3-D, per rad) is already computed in AircraftScissorPlot.m
 
 % Back out (1 - de/da) from the already-exported CL_Alpha rather than
