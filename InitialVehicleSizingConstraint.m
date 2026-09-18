@@ -1,25 +1,31 @@
-function InitialVehicleSizingConstraint(data)
+function InitialVehicleSizingConstraint(params)
     %% First Constraint: Stall Speed
     % this determines the range of values to consider for W/S:
-    W_S_max = 0.5*data.rho*data.V_S^2*data.CL_max; 
+    W_S_max = 0.5*params.env.rho*params.aero.V_S^2*params.aero.CL_max; 
     W_S = 0:W_S_max;
     
     %% Second Constraint: Cruise Speed
-    W_P_cruise = (data.eta_p*data.phi_C / (0.5*data.CD_cruise*data.rho*data.V_C^3)) * W_S;
+    W_P_cruise = (params.prop.eta_p*params.performance.phi_C ...
+        / (0.5*params.aero.CD_cruise*params.env.rho*params.performance.V_C^3)) * W_S;
     
     %% Third Constraint: Climb Requirement
     % climb at 0.866 L/D max:
-    L_D_climb = 0.866*data.L_D_max;
-    W_P_climb = data.eta_p / (data.V_S * (1 / L_D_climb + sin((pi/180) * data.gamma)));
+    L_D_climb = 0.866*params.aero.L_D_max;
+    W_P_climb = params.prop.eta_p / (params.aero.V_S * ...
+        (1 / L_D_climb + sin((pi/180) * params.performance.gamma)));
     
     %% Fourth Constraint: Maneuver Requirement
-    q_m = 0.5 * data.rho * data.V_M^2;
-    W_P_m = data.eta_p ./ (q_m*data.V_M*(data.CD_0./W_S + data.K_wing*(data.n/q_m)^2*W_S));
+    q_m = 0.5 * params.env.rho * params.performance.V_M^2;
+
+    W_P_m = params.prop.eta_p ./ (q_m*params.performance.V_M*...
+    (params.aero.CD_0./W_S + params.aero.K_wing*(params.performance.n/q_m)^2*W_S));
     
     %% Fifth Constaint: Takeoff Requirement
-    numer = 1 - exp(0.6*data.rho*data.g*data.CD_G*data.S_TO*(1./W_S));
-    denom = data.mu_TO-(data.mu_TO+data.CD_G/data.CL_R) * (exp(0.6*data.rho*data.g*data.CD_G*data.S_TO*1./W_S));
-    W_P_TO = (numer ./ denom) * (data.eta_p_TO / data.V_TO);
+    numer = 1 - exp(0.6*params.env.rho*params.env.g*params.aero.CD_G*...
+        params.performance.S_TO*(1./W_S));
+    denom = params.env.mu_TO-(params.env.mu_TO+params.aero.CD_G/params.aero.CL_R) ...
+        * (exp(0.6*params.env.rho*params.env.g*params.aero.CD_G*params.performance.S_TO*1./W_S));
+    W_P_TO = (numer ./ denom) * (params.prop.eta_p_TO / params.performance.V_TO);
     
     
     %% Final constraint plot:
@@ -41,24 +47,24 @@ function InitialVehicleSizingConstraint(data)
     hold on;
     
     % Plot constraint lines
-    plot(W_S_max*ones(2,1),[0;0.25], 'r-',  'LineWidth', 1.5, 'DisplayName', 'Stall Speed');
-    plot([0;W_S_max],W_P_climb*ones(2,1), 'g--', 'LineWidth', 1.5, 'DisplayName', 'Climb Constraint');
-    plot(W_S,W_P_cruise, 'b:',  'LineWidth', 1.5, 'DisplayName', 'Cruise Constraint');
-    plot(W_S,W_P_m, 'c-.', 'LineWidth', 1.5, 'DisplayName', 'Maneuver Constraint');
+    plot(W_S_max*ones(2,1),[0;0.25], 'r-', 'DisplayName', 'Stall Speed');
+    plot([0;W_S_max],W_P_climb*ones(2,1), 'g--', 'DisplayName', 'Climb Constraint');
+    plot(W_S,W_P_cruise, 'b:', 'DisplayName', 'Cruise Constraint');
+    plot(W_S,W_P_m, 'c-.', 'DisplayName', 'Maneuver Constraint');
     plot(W_S,W_P_TO, 'k-',  'LineWidth', 2.5, 'DisplayName', 'Takeoff Constraint');
-    plot(data.W_S_design,data.W_P_design, 'r*', 'MarkerSize', 12, 'DisplayName', 'Design Point')
-    text(data.W_S_design-1, data.W_P_design-.001, ...
-        sprintf('(%.1f, %.3f)', data.W_S_design, data.W_P_design), ...
-        'VerticalAlignment', 'top', 'HorizontalAlignment', 'right', ...
-        'FontSize', 12, 'Color', 'r')
+    plot(params.performance.W_S_design,params.performance.W_P_design, ...
+        'r*', 'MarkerSize', 12, 'DisplayName', 'Design Point')
+    text(params.performance.W_S_design-1, params.performance.W_P_design-.001, ...
+        sprintf('(%.1f, %.3f)', params.performance.W_S_design, params.performance.W_P_design), ...
+        'VerticalAlignment', 'top', 'HorizontalAlignment', 'right', 'Color', 'r')
     
     ylim([0, 0.50]);
     xlim([0, W_S_max*1.05]);
     set(gca, 'FontSize', 14);
-    xlabel("$\frac{W}{S} \left[\frac{N}{m^2}\right]$", 'FontSize', 18, Interpreter='latex')
-    ylabel("$\frac{W}{P} \left[\frac{N}{W}\right]$", 'Rotation', 0, 'FontSize', 18, Interpreter='latex')
-    title('Aircraft Constraint Diagram', 'FontSize', 18)
-    legend('Location','northeast', 'FontSize', 10)
+    xlabel("$\frac{W}{S} \left[\frac{N}{m^2}\right]$")
+    ylabel("$\frac{W}{P} \left[\frac{N}{W}\right]$", 'Rotation', 0)
+    title('Aircraft Constraint Diagram')
+    legend('Location','northeast')
 
 end
 
