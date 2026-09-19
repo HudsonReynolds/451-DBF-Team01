@@ -15,7 +15,7 @@ params.W = VehicleWeightEstimation(params);
 
 % Drag build-up
 params.CD_0 = DragBuildUp(params);
-
+% 
 % stabilility analysis
 A5B(params);
 
