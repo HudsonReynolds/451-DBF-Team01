@@ -9,6 +9,7 @@ D_TO = 0.5 * params.env.rho * (0.7*params.performance.V_TO)^2 * params.geometry.
 T_static = (params.performance.MTOW * params.performance.V_TO^2) / (2 * params.env.g * params.performance.S_TO) + D_TO + params.env.mu_TO*(params.performance.MTOW - L_TO) % Static thrust [N]
 T_C = 0.5 * params.env.rho * params.performance.V_C^2 * params.geometry.S_wing * (params.aero.CD_0 + params.aero.K_wing*params.aero.CL_C^2) % Cruise thrust [N]
 
+
 %% Power
 eta_motor = 0.8; % Motor efficiency
 eta_ESC = 0.95; % ESC efficiency
@@ -19,19 +20,26 @@ P_motor = P_shaft / eta_motor % Motor power per motor [W]
 P_battery = P_motor / eta_ESC % Battery power per motor [W]
 
 %% System specs
-Kv = 1050; % [RPM/V]
+Kv = 1170; % [RPM/V]
 Kt = 60 / (2*pi*Kv); % [N-m/A]
-I0 = 0.9; % No load current [A]
-V = 14.8; % Motor voltage [V]
-R = 0.045; % Motor resistance [Ohms]
+I0 = 1.6; % No load current [A]
+V = 14.5; % Motor voltage [V]
+R = 0.027; % Motor resistance [Ohms]
 
 
 %% Analysis
-filename = "PER3_9x45E.txt";
+filename = "PER3_8x4E.txt";
 prop = loadPropData(filename);
 
 D = IN2M * str2double(regexp(filename, '_(\d+)x', 'tokens', 'once')); % Prop diameter [m]
-V_range = linspace(0, 25); % Airspeed range [m/s]
+V_range = linspace(0, 40); % Airspeed range [m/s]
+
+%% Drag
+CL_level = params.performance.MTOW ./ (0.5 * params.env.rho * V_range.^2 * params.geometry.S_wing);
+
+Drag = 0.5 * params.env.rho .* (V_range).^2 .* params.geometry.S_wing .* (params.aero.CD_0 + params.aero.K_wing*CL_level.^2);
+
+Drag_Cruise = 0.5 * params.env.rho .* (params.performance.V_C).^2 .* params.geometry.S_wing .* (params.aero.CD_0 + params.aero.K_wing*params.aero.CL_C^2);
 
 % Torque balance
 RPM_noload = V * Kv; % Max motor speed [RPM]
@@ -74,13 +82,23 @@ figure('Color','w','Position',[100 100 1200 340]);
 tiledlayout(1,3,'TileSpacing','compact','Padding','compact');
 
 % Thrust
-nexttile; hold on; box on; grid on;
+ylim(nexttile, [0, 35])
+hold on; box on; grid on;
 for i = 1:4
     plot(V_range, T(i,:), 'Color', clr(i,:), 'LineStyle', sty{i}, 'LineWidth', lw);
 end
+plot(V_range,Drag, 'Color','black')
+plot(0.5, T_static, 'r*');
+plot(28.7, 7.9, 'r*');
+plot(params.performance.V_C, Drag_Cruise, 'r*')
+text(0.2, 12, 'Static Thrust Required', 'FontSize',10)
+text(24, 13, 'Max Level Speed', 'FontSize',10)
+text(18, 2.5, 'Cruise Thrust Required', 'FontSize',10)
 xlabel('Airspeed [m/s]'); ylabel('Thrust [N]'); title('Thrust vs. Airspeed');
+legend({'25%','50%','75%','100%', 'Drag'}, 'Location','northeast');
 
 % Electrical power
+
 nexttile; hold on; box on; grid on;
 for i = 1:4
     plot(V_range, P(i,:), 'Color', clr(i,:), 'LineStyle', sty{i}, 'LineWidth', lw);
@@ -95,4 +113,3 @@ for i = 1:4
 end
 ylim([0 1]);
 xlabel('Airspeed [m/s]'); ylabel('Propeller efficiency [-]'); title('Efficiency vs. Airspeed');
-legend(h, {'25%','50%','75%','100%'}, 'Location','northwest');
