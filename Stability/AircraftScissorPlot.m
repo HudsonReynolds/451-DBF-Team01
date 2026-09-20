@@ -1,33 +1,20 @@
 function params = AircraftScissorPlot(params)
 
-% basic script for computing a scissor plot of the aircraft:
+% Basic script for computing a scissor plot of the aircraft:
 
-winglength = 1.5;
-AR_wing = winglength/params.geometry.c_wing;
-x_ac = 0.25;
-
-% TODO: UPDATE CM_0
-CM_0 = -0.08;
+params.aero.CM_0_Wing = -0.08;
 
 % generating these new parameters.
-params.aero.CL_Alpha_Tail = CalcLiftSlope(params.geometry.AR_hstab, 6.29); 
-params.aero.CL_Alpha_Wing = CalcLiftSlope(AR_wing); 
+params.aero.CL_Alpha_Tail = CalcLiftSlope(params.geometry.AR_hstab); 
+params.aero.CL_Alpha_Wing = CalcLiftSlope(params.geometry.AR, 6.29); 
 
 % Downwash Gradient
-kappa = 2;
-de_da = kappa* params.aero.CL_Alpha_Wing / (pi * AR_wing);
+params.aero.de_da = params.geometry.kappa* params.aero.CL_Alpha_Wing / (pi * params.geometry.AR);
 
-% generating these new parameters
 % compute the total aircraft lift slope:
-params.aero.CL_Alpha = params.aero.CL_Alpha_Wing + params.aero.CL_Alpha_Tail*(1-de_da);
+params.aero.CL_Alpha = params.aero.CL_Alpha_Wing + params.aero.CL_Alpha_Tail*(1-params.aero.de_da);
 
 x_cg = linspace(0.,0.5);
-
-% Calculation of the Neutral Point:
-
-%x_n = x_ac + ((CL_Alpha_Tail) * (1 - de_da) * V_H) / (CL_Alpha_Wing + S_t / S_w * CL_Alpha_Tail * (1 - de_da));
-
-% Scissor Plot - forward CG Limit, aft CG limit (stability)
 
 % TODO: Update this value once we know control authority limits
 
@@ -38,23 +25,21 @@ CLNoseUp_Tail = -CL_delta_e_Tail_fwd * deg2rad(params.geometry.delta_e_limit_deg
 CM_EquivalentRotate = 0.1;
 
 % Takeoff Rotation
-St_S_takeoff = (CM_0 + params.aero.CL_R .* (x_cg - x_ac) - CM_EquivalentRotate) ./...
-    (CLNoseUp_Tail .* ((params.geometry.l_t / params.geometry.c_wing) - x_cg + x_ac));
+St_S_takeoff = (params.aero.CM_0_Wing + params.aero.CL_R .* (x_cg - params.geometry.x_ac) - CM_EquivalentRotate) ./...
+    (CLNoseUp_Tail .* ((params.geometry.l_t / params.geometry.c_wing) - x_cg + params.geometry.x_ac));
 
 % Stall Recovery
-CM_requiredRecovery = -params.aero.CL_max*params.geometry.SM + CM_0;
+CM_requiredRecovery = -params.aero.CL_max*params.geometry.SM + params.aero.CM_0_Wing;
 
-alpha_stall = deg2rad(15.8);
+alpha_stall_airfoil = deg2rad(params.aero.Airfoil_Alpha_Stall);
 
-CL_NoseDown_Tail = params.aero.CL_Alpha_Tail*alpha_stall;
+CL_NoseDown_Tail = params.aero.CL_Alpha_Tail*alpha_stall_airfoil;
 
-St_S_stall = (CM_0 + params.aero.CL_max .* (x_cg - x_ac) - CM_requiredRecovery) ./...
-    (CL_NoseDown_Tail * ((params.geometry.l_t / params.geometry.c_wing) - x_cg + x_ac));
+St_S_stall = (params.aero.CM_0_Wing + params.aero.CL_max .* (x_cg - params.geometry.x_ac) - CM_requiredRecovery) ./...
+    (CL_NoseDown_Tail * ((params.geometry.l_t / params.geometry.c_wing) - x_cg + params.geometry.x_ac));
 
 % stability limit:
-St_S_stability = (x_cg - x_ac + params.geometry.SM) ./ ((1-de_da)*params.geometry.l_t/params.geometry.c_wing - (x_cg - x_ac + params.geometry.SM));
-
-% TODO: choose the chord of the tail:
+St_S_stability = (x_cg - params.geometry.x_ac + params.geometry.SM) ./ ((1-params.aero.de_da)*params.geometry.l_t/params.geometry.c_wing - (x_cg - params.geometry.x_ac + params.geometry.SM));
 params.geometry.V_H = params.geometry.St_S*params.geometry.l_t/params.geometry.c_wing;
 
 %initialization of parameters
@@ -62,12 +47,11 @@ params.geometry.x_cg_fwd = interp1(St_S_takeoff, x_cg, params.geometry.St_S);
 params.geometry.x_cg_aft = interp1(St_S_stability, x_cg, params.geometry.St_S);
 
 % Neutral Point Calculation
-one_minus_deda = (params.aero.CL_Alpha - params.aero.CL_Alpha_Wing)/params.aero.CL_Alpha_Tail;
-x_n = params.geometry.x_ac + (params.aero.CL_Alpha_Tail*one_minus_deda*params.geometry.V_H) / ...
-      (params.aero.CL_Alpha_Wing + params.geometry.St_S*params.aero.CL_Alpha_Tail*one_minus_deda);
+params.geometry.x_n = params.geometry.x_ac + (params.aero.CL_Alpha_Tail*(1-params.aero.de_da)*params.geometry.V_H) / ...
+      (params.aero.CL_Alpha_Wing + params.geometry.St_S*params.aero.CL_Alpha_Tail*(1-params.aero.de_da));
 
 %initialization parameter
-params.geometry.x_cg_design = x_n - params.geometry.SM;
+params.geometry.x_cg_design = params.geometry.x_n - params.geometry.SM;
 
 figure('Name','Aircraft Scissor Plot');
 plot(x_cg, St_S_takeoff, 'DisplayName', 'Forward Limit (Takeoff)')
