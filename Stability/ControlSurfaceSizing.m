@@ -12,9 +12,8 @@ CL_delta_e      = params.geometry.St_S * CL_delta_e_Tail;
 % Neutral point (same derivation as StabilityDerivatives.m) so static
 % margin -- and therefore CM_alpha -- is recomputed per CG case instead
 % of reusing a single fixed data.SM:
-one_minus_deda = (params.aero.CL_Alpha - params.aero.CL_Alpha_Wing)/params.aero.CL_Alpha_Tail;
-x_n = params.geometry.x_ac + (params.aero.CL_Alpha_Tail*one_minus_deda*params.geometry.V_H) / ...
-      (params.aero.CL_Alpha_Wing + params.geometry.St_S*params.aero.CL_Alpha_Tail*one_minus_deda);
+x_n = params.geometry.x_ac + (params.aero.CL_Alpha_Tail*(1-params.aero.de_da)*params.geometry.V_H) / ...
+      (params.aero.CL_Alpha_Wing + params.geometry.St_S*params.aero.CL_Alpha_Tail*(1-params.aero.de_da));
 
 CL_range = linspace(-0.3, params.aero.CL_max, 200);
 
@@ -62,132 +61,65 @@ end
 
 %% ---- Ailerons: roll-rate authority ----
 
-% Sarah Inputs
-E_a = 0.25;                     % aileron chord fraction
-y1_frac = 0.7; y2_frac = 1;     % aileron span fractions of the semispan
+delta_a_limit = deg2rad(params.geometry.delta_a_limit);    % max aileron deflection
+V_roll = 1.3*params.aero.V_S;                              % design airspeed for the roll criterion
 
-delta_a_limit = deg2rad(15);    % max aileron deflection
-V_roll = 1.3*params.aero.V_S;          % design airspeed for the roll criterion
+y  = linspace(0, params.geometry.wingspan/2, 400);
+c_of_y = params.geometry.c_wing*ones(size(y));             % rectangular wing: no taper, so no taper approximation enters this integral
 
-roll_rate_target_dps = 120;     % [deg/s] roll-rate target -- state source
-
-b = params.geometry.S_wing / params.geometry.c_wing;     % wingspan [m] -- rectangular wing (c_wing constant along span)
-y  = linspace(0, b/2, 400);
-c_of_y = params.geometry.c_wing*ones(size(y)); % rectangular wing: no taper, so no taper approximation enters this integral
-
-tau_a = (1/pi)*(acos(1-2*E_a) + 2*sqrt(E_a*(1-E_a))); % Glauert flap effectiveness (exact thin-airfoil result, bounded 0-1)
+tau_a = (1/pi)*(acos(1-2*params.geometry.E_a) + 2*sqrt(params.geometry.E_a*(1-params.geometry.E_a))); % Glauert flap effectiveness (exact thin-airfoil result, bounded 0-1)
 assert(tau_a >= 0 && tau_a <= 1, 'Aileron effectiveness out of bounds -- check E_a');
 Cl_delta_local = params.aero.CL_Alpha_Wing*tau_a;
 
-y1 = y1_frac*b/2; y2 = y2_frac*b/2;
+y1 = params.geometry.y1_frac*params.geometry.wingspan/2; y2 = params.geometry.y2_frac*params.geometry.wingspan/2;
 mask = (y >= y1) & (y <= y2);
-Cl_deltaA = (2*Cl_delta_local/(params.geometry.S_wing*b)) * trapz(y(mask), c_of_y(mask).*y(mask));
+Cl_deltaA = (2*Cl_delta_local/(params.geometry.S_wing*params.geometry.wingspan)) * trapz(y(mask), c_of_y(mask).*y(mask));
 
 % Roll damping (Sadraey ch. 12 form) -- VERIFY exact leading coefficient against your text
-Cl_p = -4*(params.aero.CL_Alpha_Wing + params.aero.CD_0)/(params.geometry.S_wing*b^2) * trapz(y, c_of_y.*y.^2);
+Cl_p = -4*(params.aero.CL_Alpha_Wing + params.aero.CD_0)/(params.geometry.S_wing*params.geometry.wingspan^2) * trapz(y, c_of_y.*y.^2);
 
 % Convert the stated deg/s target into the equivalent pb/2V at V_roll -- this
 % line needs b, Cl_deltaA, and Cl_p to already exist, so it goes here, not
 % up near roll_rate_target_dps:
-pb_2V_target = deg2rad(roll_rate_target_dps)*b/(2*V_roll);
-
 pb_2V_achieved = -(Cl_deltaA/Cl_p)*delta_a_limit;
-p_roll_dps = rad2deg(pb_2V_achieved*2*V_roll/b);
-roll_margin_dps = p_roll_dps - roll_rate_target_dps;
+p_roll_dps = rad2deg(pb_2V_achieved*2*V_roll/params.geometry.wingspan);
+roll_margin_dps = p_roll_dps - params.aero.roll_rate_target_dps;
 
 fprintf('--- Ailerons ---\n');
-fprintf('Span %.0f%%-%.0f%% semispan, chord fraction %.2f:\n', y1_frac*100, y2_frac*100, E_a);
+fprintf('Span %.0f%%-%.0f%% semispan, chord fraction %.2f:\n', params.geometry.y1_frac*100, params.geometry.y2_frac*100, params.geometry.E_a);
 fprintf('  roll rate achieved = %.1f deg/s (target %.0f deg/s) at %.1f m/s, margin = %.1f deg/s\n', ...
-    p_roll_dps, roll_rate_target_dps, V_roll, roll_margin_dps);
+    p_roll_dps, params.aero.roll_rate_target_dps, V_roll, roll_margin_dps);
 if abs(roll_margin_dps) < 2
     warning('Roll rate sits right on the target -- treat as a finding, not a pass.');
 end
 
-%% Original Code Swapped by Block Above to Meet 120 deg/s roll rate
-% delta_a_limit = deg2rad(15);    % max aileron deflection
-% V_roll = 1.3*data.V_S;          % design airspeed for the roll criterion
-% % C_lp = -params.aero.CL_Alpha_Wing/4;
-% % CL_Epsilon_A
-% 
-% %pb_2V_target = 0.09;            % PLACEHOLDER roll-rate target -- state source (e.g. MIL-F-8785C Level 1)
-% roll_rate_target_dps = 120;     % [deg/s] roll-rate target -- state source
-% pb_2V_target = deg2rad(roll_rate_target_dps)*b/(2*V_roll);
-% 
-% pb_2V_achieved = -(Cl_deltaA/Cl_p)*delta_a_limit;
-% p_roll_dps = rad2deg(pb_2V_achieved*2*V_roll/b);
-% roll_margin_dps = p_roll_dps - roll_rate_target_dps;
-% 
-% fprintf('--- Ailerons ---\n');
-% fprintf('Span %.0f%%-%.0f%% semispan, chord fraction %.2f:\n', y1_frac*100, y2_frac*100, E_a);
-% fprintf('  roll rate achieved = %.1f deg/s (target %.0f deg/s) at %.1f m/s, margin = %.1f deg/s\n', ...
-%     p_roll_dps, roll_rate_target_dps, V_roll, roll_margin_dps);
-% if abs(roll_margin_dps) < 2
-%     warning('Roll rate sits right on the target -- treat as a finding, not a pass.');
-% end
-% 
-% 
-% b = params.geometry.S_wing / data.c_wing;     % wingspan [m] -- rectangular wing (c_wing constant along span)
-% y  = linspace(0, b/2, 400);
-% c_of_y = data.c_wing*ones(size(y)); % rectangular wing: no taper, so no taper approximation enters this integral
-% 
-% tau_a = (1/pi)*(acos(1-2*E_a) + 2*sqrt(E_a*(1-E_a))); % Glauert flap effectiveness (exact thin-airfoil result, bounded 0-1)
-% assert(tau_a >= 0 && tau_a <= 1, 'Aileron effectiveness out of bounds -- check E_a');
-% Cl_delta_local = params.aero.CL_Alpha_Wing*tau_a;
-% 
-% y1 = y1_frac*b/2; y2 = y2_frac*b/2;
-% mask = (y >= y1) & (y <= y2);
-% Cl_deltaA = (2*Cl_delta_local/(params.geometry.S_wing*b)) * trapz(y(mask), c_of_y(mask).*y(mask));
-% 
-% % Roll damping (Sadraey ch. 12 form) -- VERIFY exact leading coefficient against your text
-% Cl_p = -4*(params.aero.CL_Alpha_Wing + data.CD_0)/(params.geometry.S_wing*b^2) * trapz(y, c_of_y.*y.^2);
-% 
-% pb_2V_achieved = -(Cl_deltaA/Cl_p)*delta_a_limit;
-% p_roll = pb_2V_achieved*2*V_roll/b;
-% roll_margin = pb_2V_achieved - pb_2V_target;
-% 
-% fprintf('--- Ailerons ---\n');
-% fprintf('Span %.0f%%-%.0f%% semispan, chord fraction %.2f:\n', y1_frac*100, y2_frac*100, E_a);
-% fprintf('  pb/2V achieved = %.4f (target %.4f), roll rate = %.1f deg/s at %.1f m/s\n', ...
-%     pb_2V_achieved, pb_2V_target, rad2deg(p_roll), V_roll);
-% if abs(roll_margin) < 0.005
-%     warning('Roll rate sits right on the target -- treat as a finding, not a pass.');
-% end
-
 %% ---- Rudder: crosswind authority ----
 % Sarah Inputs:
-Sv_Sw = params.geometry.V_v * params.geometry.wingspan / params.geometry.l_t;
-Sv = Sv_Sw * params.geometry.S_wing;
-E_r = 0.30;                   % rudder chord fraction -- PLACEHOLDER
-AR_v = 1.5;                   % vertical tail aspect ratio -- PLACEHOLDER
-
-
-delta_r_limit = deg2rad(20);  % PLACEHOLDER max rudder deflection
-crosswind_ratio = 0.2;        % V_crosswind/V_TO -- PLACEHOLDER, state design ratio
+delta_r_limit = deg2rad(params.geometry.delta_r_limit);  % Max rudder deflection
 
 l_v = params.geometry.l_t; % assume the vertical tail shares the horizontal tail's moment arm -- PLACEHOLDER
-S_v = params.geometry.V_v*params.geometry.S_wing*b/l_v;
-h_v = sqrt(AR_v*S_v);
+S_v = params.geometry.V_v*params.geometry.S_wing*params.geometry.wingspan/l_v;
 
-CL_Alpha_VT = CalcLiftSlope(AR_v, 6.29); % assumes same tail airfoil selection as the horizontal stabiliser
+params.aero.CL_Alpha_VT = CalcLiftSlope(params.geometry.AR_v, 6.29); % assumes same tail airfoil selection as the horizontal stabiliser
 
-tau_r = (1/pi)*(acos(1-2*E_r) + 2*sqrt(E_r*(1-E_r)));
+tau_r = (1/pi)*(acos(1-2*params.geometry.E_r) + 2*sqrt(params.geometry.E_r*(1-params.geometry.E_r)));
 assert(tau_r >= 0 && tau_r <= 1, 'Rudder effectiveness out of bounds -- check E_r');
 
-Cn_beta_VT = CL_Alpha_VT*params.geometry.V_v;         % vertical-tail-alone contribution (fuselage/wing terms belong in D5)
-Cn_delta_r = -CL_Alpha_VT*params.geometry.V_v*tau_r;
+params.aero.Cn_beta_VT = params.aero.CL_Alpha_VT*params.geometry.V_v;         % vertical-tail-alone contribution (fuselage/wing terms belong in D5)
+Cn_delta_r = -params.aero.CL_Alpha_VT*params.geometry.V_v*tau_r;
 
-beta_crosswind = asin(crosswind_ratio);
-delta_r_required = -(Cn_beta_VT/Cn_delta_r)*beta_crosswind;
+beta_crosswind = asin(params.aero.crosswind_ratio);
+delta_r_required = -(params.aero.Cn_beta_VT/Cn_delta_r)*beta_crosswind;
 rudder_margin = rad2deg(delta_r_limit) - abs(rad2deg(delta_r_required));
 
 fprintf('--- Rudder ---\n');
-fprintf('S_v = %.4f m^2, AR_v = %.2f, chord fraction %.2f, crosswind ratio %.2f:\n', S_v, AR_v, E_r, crosswind_ratio);
+fprintf('S_v = %.4f m^2, AR_v = %.2f, chord fraction %.2f, crosswind ratio %.2f:\n', S_v, params.geometry.AR_v, params.geometry.E_r, params.aero.crosswind_ratio);
 fprintf('  delta_r required = %.2f deg (limit +-%.0f deg, margin = %.2f deg)\n', ...
     rad2deg(delta_r_required), rad2deg(delta_r_limit), rudder_margin);
 
 % Initialization Parameters
 outputs.ControlSurfaces.Elevator = struct('E', params.geometry.E, 'delta_flare_deg', worst_deg, 'margin_deg', elevator_margin);
-outputs.ControlSurfaces.Aileron  = struct('E_a', E_a, 'y1_frac', y1_frac, 'y2_frac', y2_frac, 'pb_2V', pb_2V_achieved, 'roll_rate_dps', p_roll_dps);
-outputs.ControlSurfaces.Rudder   = struct('S_v', S_v, 'AR_v', AR_v, 'E_r', E_r, 'delta_r_deg', rad2deg(delta_r_required), 'margin_deg', rudder_margin);
+outputs.ControlSurfaces.Aileron  = struct('E_a', params.geometry.E_a, 'y1_frac', params.geometry.y1_frac, 'y2_frac', params.geometry.y2_frac, 'pb_2V', pb_2V_achieved, 'roll_rate_dps', p_roll_dps);
+outputs.ControlSurfaces.Rudder   = struct('S_v', S_v, 'AR_v', params.geometry.AR_v, 'E_r', params.geometry.E_r, 'delta_r_deg', rad2deg(delta_r_required), 'margin_deg', rudder_margin);
 
 end
