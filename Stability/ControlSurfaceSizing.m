@@ -1,14 +1,6 @@
 function [outputs, params] = ControlSurfaceSizing(params)
-% Deliverable 4 - Control surface sizing & authority (elevator, aileron, rudder)
-%
-% PLACEHOLDER ASSUMPTIONS to reconcile with the team's RFP/design choices:
-%   - delta_e_limit, delta_a_limit, delta_r_limit : mechanical travel limits
-%   - E_a, y1_frac, y2_frac                        : aileron chord/span fractions
-%   - pb_2V_target, V_roll                         : roll rate target + design airspeed + SOURCE
-%   - data.V_v, AR_v, E_r                               : vertical tail geometry, rudder chord fraction
-%   - crosswind_ratio                              : design crosswind, V_xwind/V_TO
 
-%% ---- Elevator: trim envelope plot (matches the assignment's example figure) ----
+% ---- Elevator: trim envelope plot (matches the assignment's example figure) ----
 delta_e_limit = params.geometry.delta_e_limit_deg;
 
 CG_cases  = [params.geometry.x_cg_design-.1, params.geometry.x_cg_aft];
