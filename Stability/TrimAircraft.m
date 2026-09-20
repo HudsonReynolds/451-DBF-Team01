@@ -58,7 +58,6 @@ xlabel('$C_D$')
 ylabel('$C_L$')
 title('Drag Polar')
 hold on
-exportgraphics(gcf, 'clean_drag_polar.png', 'Resolution', 300);
 
 %% Tail Lift Required to Trim ---- Beginning of CLAUDE CODE
 % Moment balance about the CG: CM_0 + CL_wing*(x_cg - x_ac) - V_H*CL_tail = 0
@@ -72,7 +71,6 @@ CD_trim = params.aero.CD_0 + params.aero.K_wing*CL_wing.^2 + params.geometry.St_
 
 plot(CD_trim, CL, '--', 'DisplayName', 'Trimmed Drag Polar')
 legend('Location','best')
-exportgraphics(gcf, 'trimmed_drag_polar.png', 'Resolution', 300);
 %% End of Claude Code ----
 
 
