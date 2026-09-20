@@ -18,15 +18,15 @@ P_motor = P_shaft / eta_motor % Motor power per motor [W]
 P_battery = P_motor / eta_ESC % Battery power per motor [W]
 
 %% System specs
-Kv = 1170; % [RPM/V]
+Kv = 1500; % [RPM/V]
 Kt = 60 / (2*pi*Kv); % [N-m/A]
-I0 = 1.6; % No load current [A]
-V = 14.8; % Motor voltage [V]
-R = 0.027; % Motor resistance [Ohms]
+I0 = 1.37; % No load current [A]
+V = 11.1; % Motor voltage [V]
+R = 0.037; % Motor resistance [Ohms]
 
 %% Analysis
 % Load prop data
-filename = "PER3_8x4E.txt";
+filename = "PER3_7x6E.txt";
 prop = loadPropData(filename);
 
 D = IN2M * str2double(regexp(filename, '_(\d+)x', 'tokens', 'once')); % Prop diameter [m]
@@ -46,11 +46,11 @@ Qres = @(RPM) max(Kt*((V - Kt*(2*pi/60)*RPM)/R - I0), 0) ...            % Q_moto
 RPM_eq = fzero(Qres, [1000, RPM_high]) % Equilibrium motor speed [RPM]
 
 % Determine motor operating speeds
-RPM_lim = 145000 / (D / IN2M) % Propellor structural speed limit
+RPM_lim = 145000 / (D / IN2M) % Propeller structural speed limit
 RPM_max = min(RPM_eq, RPM_lim) % 100% throttle RPM
 throttle_settings = [0.25 0.5 0.75 1];
 
-% Get propellor data
+% Get propeller data
 Ct = zeros(numel(throttle_settings), numel(V_range));
 Cp = zeros(numel(throttle_settings), numel(V_range));
 J  = zeros(numel(throttle_settings), numel(V_range));
@@ -127,3 +127,5 @@ for i = 1:4
 end
 ylim([0 1]);
 xlabel('Airspeed [m/s]'); ylabel('Propeller efficiency [-]'); title('Efficiency vs. Airspeed');
+
+%exportgraphics(gcf, 'prop.png', 'Resolution', 300);
