@@ -1,6 +1,5 @@
 % Main script: Run all of the sizing and analysis in one place. 
 
-
 clear;clc;close all
 
 Setup() % setup plotting & paths for everything
