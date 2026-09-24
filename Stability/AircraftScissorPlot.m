@@ -2,7 +2,6 @@ function params = AircraftScissorPlot(params)
 
 % Basic script for computing a scissor plot of the aircraft:
 
-params.aero.CM_0_Wing = -0.08;
 
 % generating these new parameters.
 params.aero.CL_Alpha_Tail = CalcLiftSlope(params.geometry.AR_hstab); 
@@ -19,13 +18,11 @@ x_cg = linspace(0.,0.5);
 % TODO: Update this value once we know control authority limits
 
 %change actuator limits
-params.geometry.delta_e_limit_deg = 20; % [deg] elevator travel limit -- confirm against servo/horn travel
 CL_delta_e_Tail_fwd = params.aero.CL_Alpha_Tail/pi * (acos(1-2*params.geometry.E) + 2*sqrt(params.geometry.E*(1-params.geometry.E)));
 CLNoseUp_Tail = -CL_delta_e_Tail_fwd * deg2rad(params.geometry.delta_e_limit_deg);
-CM_EquivalentRotate = 0.1;
 
 % Takeoff Rotation
-St_S_takeoff = (params.aero.CM_0_Wing + params.aero.CL_R .* (x_cg - params.geometry.x_ac) - CM_EquivalentRotate) ./...
+St_S_takeoff = (params.aero.CM_0_Wing + params.aero.CL_R .* (x_cg - params.geometry.x_ac) - params.aero.CM_EquivalentRotate) ./...
     (CLNoseUp_Tail .* ((params.geometry.l_t / params.geometry.c_wing) - x_cg + params.geometry.x_ac));
 
 % Stall Recovery

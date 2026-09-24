@@ -62,7 +62,7 @@ end
 %% ---- Ailerons: roll-rate authority ----
 
 delta_a_limit = deg2rad(params.geometry.delta_a_limit);    % max aileron deflection
-V_roll = 1.3*params.aero.V_S;                              % design airspeed for the roll criterion
+V_roll = 1.3*params.performance.V_S;                              % design airspeed for the roll criterion
 
 y  = linspace(0, params.geometry.wingspan/2, 400);
 c_of_y = params.geometry.c_wing*ones(size(y));             % rectangular wing: no taper, so no taper approximation enters this integral
@@ -100,7 +100,7 @@ delta_r_limit = deg2rad(params.geometry.delta_r_limit);  % Max rudder deflection
 l_v = params.geometry.l_t; % assume the vertical tail shares the horizontal tail's moment arm -- PLACEHOLDER
 S_v = params.geometry.V_v*params.geometry.S_wing*params.geometry.wingspan/l_v;
 
-params.aero.CL_Alpha_VT = CalcLiftSlope(params.geometry.AR_v, 6.29); % assumes same tail airfoil selection as the horizontal stabiliser
+params.aero.CL_Alpha_VT = CalcLiftSlope(params.geometry.AR_vstab, 6.29); % assumes same tail airfoil selection as the horizontal stabiliser
 
 tau_r = (1/pi)*(acos(1-2*params.geometry.E_r) + 2*sqrt(params.geometry.E_r*(1-params.geometry.E_r)));
 assert(tau_r >= 0 && tau_r <= 1, 'Rudder effectiveness out of bounds -- check E_r');
@@ -113,13 +113,13 @@ delta_r_required = -(params.aero.Cn_beta_VT/Cn_delta_r)*beta_crosswind;
 rudder_margin = rad2deg(delta_r_limit) - abs(rad2deg(delta_r_required));
 
 fprintf('--- Rudder ---\n');
-fprintf('S_v = %.4f m^2, AR_v = %.2f, chord fraction %.2f, crosswind ratio %.2f:\n', S_v, params.geometry.AR_v, params.geometry.E_r, params.aero.crosswind_ratio);
+fprintf('S_v = %.4f m^2, AR_v = %.2f, chord fraction %.2f, crosswind ratio %.2f:\n', S_v, params.geometry.AR_vstab, params.geometry.E_r, params.aero.crosswind_ratio);
 fprintf('  delta_r required = %.2f deg (limit +-%.0f deg, margin = %.2f deg)\n', ...
     rad2deg(delta_r_required), rad2deg(delta_r_limit), rudder_margin);
 
 % Initialization Parameters
 outputs.ControlSurfaces.Elevator = struct('E', params.geometry.E, 'delta_flare_deg', worst_deg, 'margin_deg', elevator_margin);
 outputs.ControlSurfaces.Aileron  = struct('E_a', params.geometry.E_a, 'y1_frac', params.geometry.y1_frac, 'y2_frac', params.geometry.y2_frac, 'pb_2V', pb_2V_achieved, 'roll_rate_dps', p_roll_dps);
-outputs.ControlSurfaces.Rudder   = struct('S_v', S_v, 'AR_v', params.geometry.AR_v, 'E_r', params.geometry.E_r, 'delta_r_deg', rad2deg(delta_r_required), 'margin_deg', rudder_margin);
+outputs.ControlSurfaces.Rudder   = struct('S_v', S_v, 'AR_v', params.geometry.AR_vstab, 'E_r', params.geometry.E_r, 'delta_r_deg', rad2deg(delta_r_required), 'margin_deg', rudder_margin);
 
 end

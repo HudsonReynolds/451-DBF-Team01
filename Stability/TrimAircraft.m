@@ -38,8 +38,8 @@ ylabel('$\alpha_{\mathrm{trim}}$ [deg]')
 subplot(1,2,2)
 plot(CL_Trim_range,rad2deg(delta_e_trim))
 hold on
-yline(15,'r--','15° Limit')
-yline(-15,'r--','-15° Limit')
+yline(params.geometry.delta_e_limit_deg,'r--',sprintf('%g° Limit',params.geometry.delta_e_limit_deg))
+yline(-params.geometry.delta_e_limit_deg,'r--',sprintf('-%g° Limit',params.geometry.delta_e_limit_deg))
 xlabel('Trim $C_L$')
 ylabel('$\delta_{\mathrm{e,trim}}$ [deg]')
 
@@ -66,8 +66,3 @@ CD_trim = params.aero.CD_0 + params.aero.K_wing*CL_wing.^2 + params.geometry.St_
 plot(CD_trim, CL, '--', 'DisplayName', 'Trimmed Drag Polar')
 legend('Location','best')
 end
-
-
-
-
-

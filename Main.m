@@ -1,21 +1,18 @@
-% Main script: Run all of the sizing and analysis in one place. 
-
-clear;clc;close all
+clear;clc;
 
 Setup() % setup plotting & paths for everything
 
 params = readParams("SizingParams.xlsx");
 
-% run all of the sizing:
-InitialVehicleSizingConstraint(params);
+params = InitialCalcs(params);
 
-% TODO: Weight is both in the excel and here. UPDATE
-params.W = VehicleWeightEstimation(params);
+params = DragBuildUp(params);
 
-% Drag build-up
-params.CD_0 = DragBuildUp(params);
-% 
-% stabilility analysis
+params = calcAero(params);
+
+params = VehicleWeightEstimation(params);
+
 A5B(params);
 
 PropulsionSizing(params);
+

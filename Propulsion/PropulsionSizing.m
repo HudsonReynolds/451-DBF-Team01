@@ -9,27 +9,19 @@ D_TO = 0.5 * params.env.rho * (0.7*params.performance.V_TO)^2 * params.geometry.
 T_static = (params.performance.MTOW * params.performance.V_TO^2) / (2 * params.env.g * params.performance.S_TO) + D_TO + params.env.mu_TO*(params.performance.MTOW - L_TO) % Static thrust [N]
 T_C = 0.5 * params.env.rho * params.performance.V_C^2 * params.geometry.S_wing * (params.aero.CD_0 + params.aero.K_wing*params.aero.CL_C^2) % Cruise thrust [N]
 
-eta_motor = 0.8; % Motor efficiency
-eta_ESC = 0.95; % ESC efficiency
-
 P_shaft_total = params.performance.MTOW / params.performance.W_P_design; % Total shaft power [W]
-P_shaft = P_shaft_total / 2; % Shaft power per motor [W]
-P_motor = P_shaft / eta_motor % Motor power per motor [W]
-P_battery = P_motor / eta_ESC % Battery power per motor [W]
+P_shaft = P_shaft_total / params.prop.n_motors; % Shaft power per motor [W]
+P_motor = P_shaft / params.prop.eta_m % Motor power per motor [W]
+P_battery = P_motor / params.prop.eta_ESC % Battery power per motor [W]
 
 %% System specs
-Kv = 1500; % [RPM/V]
-Kt = 60 / (2*pi*Kv); % [N-m/A]
-I0 = 1.37; % No load current [A]
-V = 11.1; % Motor voltage [V]
-R = 0.037; % Motor resistance [Ohms]
+Kt = 60 / (2*pi*params.prop.Kv); % [N-m/A]
 
 %% Analysis
 % Load prop data
-filename = "PER3_7x6E.txt";
-prop = loadPropData(filename);
+prop = loadPropData(params.prop.prop_file);
 
-D = IN2M * str2double(regexp(filename, '_(\d+)x', 'tokens', 'once')); % Prop diameter [m]
+D = IN2M * str2double(regexp(params.prop.prop_file, '_(\d+)x', 'tokens', 'once')); % Prop diameter [m]
 V_range = linspace(0, 40); % Airspeed range [m/s]
 
 % Drag
@@ -37,10 +29,10 @@ CL_level = params.performance.MTOW ./ (0.5 * params.env.rho * V_range.^2 * param
 D_level = 0.5 * params.env.rho .* V_range.^2 .* params.geometry.S_wing .* (params.aero.CD_0 + params.aero.K_wing*CL_level.^2);
 
 % Torque balance
-RPM_noload = V * Kv; % Max motor speed [RPM]
+RPM_noload = params.prop.V_batt * params.prop.Kv; % Max motor speed [RPM]
 RPM_high = min(RPM_noload, 25000); % Max of RPM range for solver [RPM]
 
-Qres = @(RPM) max(Kt*((V - Kt*(2*pi/60)*RPM)/R - I0), 0) ...            % Q_motor
+Qres = @(RPM) max(Kt*((params.prop.V_batt - Kt*(2*pi/60)*RPM)/params.prop.R_motor - params.prop.I0), 0) ...            % Q_motor
              - prop.query(RPM,0).Cp * params.env.rho * (RPM/60)^2 * D^5 / (2*pi);  % Q_prop
 
 RPM_eq = fzero(Qres, [1000, RPM_high]) % Equilibrium motor speed [RPM]
@@ -71,11 +63,11 @@ T = Ct .* params.env.rho .* n.^2 .* D^4; % Thrust [N]
 P_shaft = Cp .* params.env.rho .* n.^3 .* D^5; % Shaft power [W]
 eta_prop = (J .* Ct) ./ Cp; % Propellor efficiency [-]
                      
-I = P_shaft ./ (Kt * omega) + I0; % Motor current [A]
-P_elec = (omega.*Kt.*I + I.^2*R) ./ eta_ESC; % Electrical power from battery [W]
+I = P_shaft ./ (Kt * omega) + params.prop.I0; % Motor current [A]
+P_elec = (omega.*Kt.*I + I.^2*params.prop.R_motor) ./ params.prop.eta_ESC; % Electrical power from battery [W]
 
-T_total = 2 * T; % Total vehicle thrust [N]
-P_elec_total = 2 * P_elec; % Total vehicle battery power [W]
+T_total = params.prop.n_motors * T; % Total vehicle thrust [N]
+P_elec_total = params.prop.n_motors * P_elec; % Total vehicle battery power [W]
 
 % Find max level airspeed
 diff = T_total(4,:) - D_level;
