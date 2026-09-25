@@ -40,18 +40,20 @@ W_batt_payload = (BatteryWeightFraction)*W + params.performance.W_pay;
 W_We = W - params.performance.W_e_frac*W;
 
 % find the intersection of these lines for the empty weight:
-[~,idx] = min(abs(W_batt_payload-W_We));
-Weight = W(idx);
-Weight_y = W_We(idx);
-figure('Name','Total Vehicle Weight Estimate');
-plot(W,W_batt_payload,'g', 'DisplayName', '$W_B + W_P$')
-hold on
-plot(W,W_We,'b', 'DisplayName', '$W - W_e$')
-plot(Weight,Weight_y,'ro','DisplayName',string(Weight))
-xlabel('Total Weight [kg]')
-ylabel('Fractional Weights [kg]')
-title('Weight Estimate')
-legend('Location','Best');
+% [~,idx] = min(abs(W_batt_payload-W_We));
+% Weight = W(idx);
+% Weight_y = W_We(idx);
+Weight = params.performance.W_pay / (1 - params.performance.W_e_frac - BatteryWeightFraction);
+Weight_y = Weight - params.performance.W_e_frac*Weight;
+% figure('Name','Total Vehicle Weight Estimate');
+% plot(W,W_batt_payload,'g', 'DisplayName', '$W_B + W_P$')
+% hold on
+% plot(W,W_We,'b', 'DisplayName', '$W - W_e$')
+% plot(Weight,Weight_y,'ro','DisplayName',string(Weight))
+% xlabel('Total Weight [kg]')
+% ylabel('Fractional Weights [kg]')
+% title('Weight Estimate')
+% legend('Location','Best');
 
 % use total weight for energies
 totBatteryWeight = BatteryWeightFraction * Weight
@@ -62,9 +64,9 @@ energyLost = (1-params.prop.useableCapacity*params.prop.temp_derate)*totEnergyRe
 energyLossPercentage = energyLost/totEnergyRequiredByBatt * 100
 
 % Delivarable 5 shit:
-pieChart_vals = [params.performance.W_pay,totBatteryWeight,Weight - params.performance.W_pay - totBatteryWeight];
-figure('Name','Payload, Battery, Vehicle Weight Pie Chart');
-piechart(pieChart_vals,["Payload Weight","Battery Weight", "Empty Weight"])
+% pieChart_vals = [params.performance.W_pay,totBatteryWeight,Weight - params.performance.W_pay - totBatteryWeight];
+% figure('Name','Payload, Battery, Vehicle Weight Pie Chart');
+% piechart(pieChart_vals,["Payload Weight","Battery Weight", "Empty Weight"])
 % calculate the energy margin:
 energyMargin = totBatteryEnergy / totEnergyRequiredByPlane
 
