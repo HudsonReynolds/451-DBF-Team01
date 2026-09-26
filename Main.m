@@ -22,7 +22,9 @@ while err > 0.001
     MTOM_guess = MTOM_new;
 end
 
-A5B(params);
+params = A5B(params);
+
+ServoSizing(params);
 
 PropulsionSizing(params);
 
