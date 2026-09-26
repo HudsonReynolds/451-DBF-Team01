@@ -9,7 +9,12 @@ function [outputs, params] = ServoSizing(params)
 % hinge moment by ~2x -- conservative for servo sizing.
 %
 % Available torque: two-point datasheet interpolation to the actual servo
-% rail voltage, not the datasheet's highest quoted voltage.
+% rail voltage, not the datasheet's highest quoted voltage. Selected servo
+% (all three surfaces) is the TowerPro MG90S -- aileron uses one per side
+% (2 total, per the wiring diagram), elevator and rudder one each. Only a
+% single datasheet point is available (28.24 oz-in stall torque @ 5.5V,
+% from the team's A7 servo-specs slide); add the second voltage point here
+% once it's pulled from the full MG90S datasheet to get a real interpolation.
 %
 % Torque at the servo = hinge moment / linkage ratio / linkage efficiency,
 % times a stated safety-margin design factor (matches the linked Sheet1
@@ -26,8 +31,8 @@ cs(1) = struct( ...
     'bf',            (params.geometry.y2_frac - params.geometry.y1_frac)*params.geometry.wingspan/2, ...
     'delta_max_deg', params.geometry.delta_a_limit, ...
     'ratio',         params.controls.linkage_ratio_aileron, ...
-    'servo_V',       [4.8 6.0], ...   % PLACEHOLDER -- replace with the selected servo's datasheet voltage points
-    'servo_T',       [40  52]);       % PLACEHOLDER -- oz-in stall torque at servo_V
+    'servo_V',       5.5, ...   % MG90S -- only datasheet point given (A7 slide 14); add a second voltage point for a real interpolation
+    'servo_T',       28.24);    % MG90S stall torque, oz-in @ 5.5V
 
 cs(2) = struct( ...
     'name',          'Elevator', ...
@@ -36,8 +41,8 @@ cs(2) = struct( ...
     'bf',            params.geometry.span_hstab, ...
     'delta_max_deg', params.geometry.delta_e_limit_deg, ...
     'ratio',         params.controls.linkage_ratio_elevator, ...
-    'servo_V',       [4.8 6.0], ...   % PLACEHOLDER -- elevator sees the largest hinge moment; a heavier-duty servo is assumed here
-    'servo_T',       [70  90]);       % PLACEHOLDER -- oz-in stall torque at servo_V
+    'servo_V',       5.5, ...   % MG90S -- only datasheet point given (A7 slide 14); add a second voltage point for a real interpolation
+    'servo_T',       28.24);    % MG90S stall torque, oz-in @ 5.5V
 
 cs(3) = struct( ...
     'name',          'Rudder', ...
@@ -46,8 +51,8 @@ cs(3) = struct( ...
     'bf',            params.geometry.span_vstab, ...   % per fin; one servo per fin assumed (n_vfins = 1)
     'delta_max_deg', params.geometry.delta_r_limit, ...
     'ratio',         params.controls.linkage_ratio_rudder, ...
-    'servo_V',       [4.8 6.0], ...   % PLACEHOLDER -- replace with the selected servo's datasheet voltage points
-    'servo_T',       [40  52]);       % PLACEHOLDER -- oz-in stall torque at servo_V
+    'servo_V',       5.5, ...   % MG90S -- only datasheet point given (A7 slide 14); add a second voltage point for a real interpolation
+    'servo_T',       28.24);    % MG90S stall torque, oz-in @ 5.5V
 
 eta_linkage = params.controls.linkage_efficiency;
 V_rail      = params.controls.V_servo_rail;
@@ -92,7 +97,12 @@ for k = 1:numel(cs)
     H  = Ch .* q .* Sf .* cf; % hinge moment [N*m]
 
     T_required = abs(H) * servo_margin * (s.ratio/eta_linkage) * NM2OZIN; % oz-in at the servo
-    T_available = interp1(s.servo_V, s.servo_T, V_rail, 'linear', 'extrap') * ones(size(V));
+    if isscalar(s.servo_V)
+        T_available_V = s.servo_T; % only one datasheet point -- can't interpolate to V_rail yet, so this is the flat/known value
+    else
+        T_available_V = interp1(s.servo_V, s.servo_T, V_rail, 'linear', 'extrap');
+    end
+    T_available = T_available_V * ones(size(V));
 
     % Airspeed at which required first exceeds available:
     diff = T_required - T_available;
