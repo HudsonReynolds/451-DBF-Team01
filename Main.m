@@ -28,5 +28,7 @@ ServoSizing(params);
 
 params = PropulsionSizing(params);
 
-params = VnDiagram(params);
+[~, params] = VnDiagram(params);
+
+VnOperatingEnvelope(params);
 
