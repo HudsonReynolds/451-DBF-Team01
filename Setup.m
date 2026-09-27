@@ -7,6 +7,10 @@ function Setup()
 set(groot,'defaultLineLineWidth',1.5)
 set(groot,'defaultFunctionLineLineWidth',1.5)
 
+% dock every figure into one window (as tabs) instead of each figure()
+% call across the codebase opening its own floating window
+set(0, 'DefaultFigureWindowStyle', 'docked')
+
 % set the interpreter to latex
 set(groot, 'defaultAxesTickLabelInterpreter','latex'); 
 set(groot, 'defaultLegendInterpreter','latex');

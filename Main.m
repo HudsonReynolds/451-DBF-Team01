@@ -26,5 +26,7 @@ params = A5B(params);
 
 ServoSizing(params);
 
-PropulsionSizing(params);
+params = PropulsionSizing(params);
+
+params = VnDiagram(params);
 
