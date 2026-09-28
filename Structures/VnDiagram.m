@@ -104,6 +104,14 @@ plot(linspace(0, V_S, 50), 0.5*rho*linspace(0,V_S,50).^2*S*CL_max/MTOW, ':', 'Co
 plot([V_S V_S], [0 n_pos_curve(1)], '-', 'Color', blue, 'LineWidth', 1.5, 'HandleVisibility', 'off');
 plot(V_pos_curve, n_pos_curve, '-', 'Color', blue, 'LineWidth', 1.5, 'DisplayName', 'stall boundary');
 
+% Dotted continuation of the SAME stall formula past V_A: the wing could
+% aerodynamically pull more than n+ up here, but the structure can't take
+% it, so this part isn't part of the envelope -- shown only so points like
+% the gust-capped marker below (which land past V_A) visibly sit on it.
+V_pos_ext = linspace(V_A, V_D, 100);
+n_pos_ext = 0.5*rho*V_pos_ext.^2*S*CL_max/MTOW;
+plot(V_pos_ext, n_pos_ext, ':', 'Color', blue, 'HandleVisibility', 'off');
+
 plot(linspace(0, V_S_neg, 50), -0.5*rho*linspace(0,V_S_neg,50).^2*S*abs(CL_max_neg)/MTOW, ':', 'Color', blue, 'HandleVisibility', 'off');
 plot([V_S_neg V_S_neg], [0 n_neg_curve(end)], '-', 'Color', blue, 'LineWidth', 1.5, 'HandleVisibility', 'off');
 plot(V_neg_curve, n_neg_curve, '-', 'Color', blue, 'LineWidth', 1.5, 'HandleVisibility', 'off');

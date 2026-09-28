@@ -32,3 +32,5 @@ params = PropulsionSizing(params);
 
 VnOperatingEnvelope(params);
 
+[~, params] = ComponentLoads(params);
+

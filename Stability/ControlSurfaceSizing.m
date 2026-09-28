@@ -6,8 +6,10 @@ delta_e_limit = params.geometry.delta_e_limit_deg;
 CG_cases  = [params.geometry.x_cg_design-.1, params.geometry.x_cg_aft];
 CG_labels = {'Forward CG limit','Aft CG limit'};
 
-CL_delta_e_Tail = params.aero.CL_Alpha_Tail/pi * (acos(1-2*params.geometry.E) + 2*sqrt(params.geometry.E*(1-params.geometry.E)));
+tau_e = (1/pi)*(acos(1-2*params.geometry.E) + 2*sqrt(params.geometry.E*(1-params.geometry.E))); % Glauert flap effectiveness, elevator
+CL_delta_e_Tail = params.aero.CL_Alpha_Tail * tau_e;
 CL_delta_e      = params.geometry.St_S * CL_delta_e_Tail;
+params.aero.tau_e = tau_e; % exposed for reuse (A8 tail loads: symmetric case)
 
 % Neutral point (same derivation as StabilityDerivatives.m) so static
 % margin -- and therefore CM_alpha -- is recomputed per CG case instead
@@ -69,6 +71,7 @@ c_of_y = params.geometry.c_wing*ones(size(y));             % rectangular wing: n
 
 tau_a = (1/pi)*(acos(1-2*params.geometry.E_a) + 2*sqrt(params.geometry.E_a*(1-params.geometry.E_a))); % Glauert flap effectiveness (exact thin-airfoil result, bounded 0-1)
 assert(tau_a >= 0 && tau_a <= 1, 'Aileron effectiveness out of bounds -- check E_a');
+params.aero.tau_a = tau_a; % exposed for reuse (A8 wing loads: rolling maneuver, if analysed)
 Cl_delta_local = params.aero.CL_Alpha_Wing*tau_a;
 
 y1 = params.geometry.y1_frac*params.geometry.wingspan/2; y2 = params.geometry.y2_frac*params.geometry.wingspan/2;
@@ -104,6 +107,7 @@ params.aero.CL_Alpha_VT = CalcLiftSlope(params.geometry.AR_vstab, 6.29); % assum
 
 tau_r = (1/pi)*(acos(1-2*params.geometry.E_r) + 2*sqrt(params.geometry.E_r*(1-params.geometry.E_r)));
 assert(tau_r >= 0 && tau_r <= 1, 'Rudder effectiveness out of bounds -- check E_r');
+params.aero.tau_r = tau_r; % exposed for reuse (A8 tail loads: asymmetric case)
 
 params.aero.Cn_beta_VT = params.aero.CL_Alpha_VT*params.geometry.V_v;         % vertical-tail-alone contribution (fuselage/wing terms belong in D5)
 Cn_delta_r = -params.aero.CL_Alpha_VT*params.geometry.V_v*tau_r;
