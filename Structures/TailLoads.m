@@ -54,13 +54,17 @@ s_h = b_h/2;
 x_ac = params.geometry.x_ac;
 x_cg = params.geometry.x_cg_design;
 l_t  = params.geometry.l_t;
-CM_0 = params.aero.CM_0;
+CM_ac_w = params.aero.CM_ac_w; % wing's own section/AC moment -- a pure couple, NOT the aircraft-total CM_0
 CL_delta_e_Tail = params.aero.CL_Alpha_Tail * params.aero.tau_e;
 delta_e_max = deg2rad(params.geometry.delta_e_limit_deg);
 
 % Balancing load (pitch equilibrium at n+, slide 30) plus the elevator
-% increment (slide 23), capped by the tail's own stall:
-L_balance   = @(V) (n_pos*MTOW*(x_cg-x_ac)*c + 0.5*rho*V.^2*S*c*CM_0) / l_t;
+% increment (slide 23), capped by the tail's own stall. Mac uses CM_ac_w,
+% not the aircraft-total CM_0: the moment equation already carries the
+% lift-arm effect explicitly via the n*MTOW*(x_cg-x_ac) term, so folding
+% in CM_0 (which itself already includes a CL_0*(x_cg-x_ac) contribution)
+% would double-count that arm.
+L_balance   = @(V) (n_pos*MTOW*(x_cg-x_ac)*c + 0.5*rho*V.^2*S*c*CM_ac_w) / l_t;
 dL_elev     = @(V) 0.5*rho*V.^2*S_h*CL_delta_e_Tail*delta_e_max;
 L_stall_h   = @(V) 0.5*rho*V.^2*S_h*eta_h*CL_max_tail;
 L_raw_h     = @(V) L_balance(V) + dL_elev(V);

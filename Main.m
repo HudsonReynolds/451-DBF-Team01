@@ -36,3 +36,5 @@ VnOperatingEnvelope(params);
 
 [~, params] = TailLoads(params);
 
+[~, params] = FuselageLoads(params);
+
