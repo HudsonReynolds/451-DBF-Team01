@@ -1,49 +1,28 @@
 function [outputs, params] = ComponentLoads(params)
 
-% A8 Deliverable 3 -- component loads: wing (lecture "08 - Structures",
-% slides 15-21). Tail and fuselage loads to follow.
-%
-% Three candidate governing cases (slide 15), all computed so the
-% governing one is picked from the numbers, not assumed:
-%   1. positive symmetric at V_A  (CL_max and n+ meet at the corner)
-%   2. negative symmetric at V_G  (the inverted mirror, same Shrenk shape
-%      since it scales linearly with n; independently evaluated at its own
-%      speed for the torque's dynamic-pressure term)
-%   3. rolling maneuver at V_A, full aileron (slide 17: "usually governs
-%      the wing ATTACHMENT") -- modelled as the baseline positive-symmetric
-%      load plus/minus an aileron-induced lift increment over the aileron
-%      span, using the SAME strip-theory model already used for roll-rate
-%      sizing in ControlSurfaceSizing.m (Cl_delta_local = CL_Alpha_Wing*tau_a).
-%      This is a reasonable preliminary model, not a full unsteady rolling
-%      analysis -- state that when you report it.
-%
-% x_spar (wing spar/shear-centre chordwise location) is a new value this
-% deliverable needs that nothing upstream produced -- it's flagged
-% ASSUMPTION in Sheet1's "structures" subclass; replace it once the spar
-% is chosen.
+%% A8 Deliverable 3 -- Wings
 
+%% Initializations
 rho  = params.env.rho;
 MTOW = params.performance.MTOW;
 S    = params.geometry.S_wing;
-c    = params.geometry.c_wing; % rectangular wing, constant chord
+c    = params.geometry.c_wing;
 
-%% ================= WING =================
+%% Wing Computations of Load, Shear, Bending Torsion at Positive, Negative, and Maneuver Load Cases
 n_pos = params.performance.n_limit_pos;
 n_neg = params.performance.n_limit_neg;
 V_A   = params.performance.V_A;
 
-% V_G (negative corner speed) isn't carried in params -- cheap to rederive,
-% same formula as VnDiagram.m/VnOperatingEnvelope.m:
 V_S_neg = sqrt(2*MTOW/(rho*S*abs(params.aero.CL_max_neg)));
 V_G = V_S_neg*sqrt(abs(n_neg));
 
 b = params.geometry.wingspan;
-s = b/2; % semispan
+s = b/2;
 
 y = linspace(0, s, 300);
-c_ell = (4*S/(pi*b)) * sqrt(max(1 - (2*y/b).^2, 0)); % Shrenk's elliptical shape (slide 18)
-c_S = 0.5*(c + c_ell);                                % Shrenk = mean of planform and ellipse
-IcS = trapz(y, c_S);                                  % semispan integral (geometry only, same for every case)
+c_ell = (4*S/(pi*b)) * sqrt(max(1 - (2*y/b).^2, 0)); 
+c_S = 0.5*(c + c_ell);                               
+IcS = trapz(y, c_S);                                 
 
 e_arm = (params.structures.x_spar - params.geometry.x_ac) * c; % ASSUMPTION on x_spar; sign decides whether Cm_ac adds to or opposes the lift-offset torque (discussion Q4)
 
@@ -57,13 +36,9 @@ t_pos = w_pos*e_arm + q_A*c^2*params.aero.CM_ac_w;
 T_pos = local_tipIntegrate(y, t_pos);
 
 % ---- Case 2: negative symmetric at V_G ----
-% (Shrenk shape is purely geometric -- it scales linearly with n, so no
-% re-normalisation is needed; only the torque's dynamic-pressure term
-% depends on the actual speed, which differs for this corner.)
 k_neg = (n_neg*MTOW/2) / IcS;
 w_neg = k_neg*c_S;
 [V_neg, M_neg] = local_tipIntegrate(y, w_neg);
-
 q_G = 0.5*rho*V_G^2;
 t_neg = w_neg*e_arm + q_G*c^2*params.aero.CM_ac_w;
 T_neg = local_tipIntegrate(y, t_neg);
@@ -82,20 +57,13 @@ w_roll_up   = w_pos - dw_aileron; % aileron trailing-edge up: less lift
 [V_roll_down, M_roll_down] = local_tipIntegrate(y, w_roll_down);
 [V_roll_up,   M_roll_up]   = local_tipIntegrate(y, w_roll_up);
 
-% Torque: same lift-offset + section-pitching-moment formula as cases 1/2,
-% applied to each panel's own load. This does NOT include the additional
-% torque from the aileron's own deflection-induced pitching moment about
-% the aerodynamic centre (a distinct "Cm_delta" effect, different from the
-% Ch_alpha/Ch_delta HINGE-moment coefficients used for servo sizing in A7)
-% -- that term isn't modelled here because no verified value/formula for it
-% exists in this codebase yet. Get it from an XFLR5 flap-deflection sweep
-% (or a handbook Cm_delta value) if you need the full torque.
 t_roll_down = w_roll_down*e_arm + q_A*c^2*params.aero.CM_ac_w;
 t_roll_up   = w_roll_up*e_arm   + q_A*c^2*params.aero.CM_ac_w;
 T_roll_down = local_tipIntegrate(y, t_roll_down);
 T_roll_up   = local_tipIntegrate(y, t_roll_up);
 
-%% ---- Compare and identify the governing case ----
+%% Console Prints and Plotting
+
 case_names = {'positive symmetric', 'negative symmetric', 'rolling maneuver (down-going wing)'};
 M_roots = [M_pos(1), M_neg(1), M_roll_down(1)];
 [M_governing, i_gov] = max(abs(M_roots));
@@ -225,7 +193,7 @@ sgtitle(sprintf('Wing Loads: Case 3 -- Rolling Maneuver at $V_A$=%.1f m/s, full 
 % Torque here omits the aileron's own deflection-induced pitching moment
 % about the AC (a distinct Cm_delta effect) -- see the note printed above.
 
-%% ---- Outputs ----
+%% Outputted Values
 outputs.ComponentLoads.wing = struct( ...
     'case_names', {case_names}, 'M_roots', M_roots, 'governing_case', case_names{i_gov}, 'M_root_governing', M_governing, ...
     'M_root_pos', M_pos(1), 'M_root_neg', M_neg(1), 'M_root_roll_down', M_roll_down(1), 'M_root_roll_up', M_roll_up(1), ...
