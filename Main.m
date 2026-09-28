@@ -32,5 +32,7 @@ params = PropulsionSizing(params);
 
 VnOperatingEnvelope(params);
 
-[~, params] = ComponentLoads(params);
+[~, params] = WingLoads(params);
+
+[~, params] = TailLoads(params);
 

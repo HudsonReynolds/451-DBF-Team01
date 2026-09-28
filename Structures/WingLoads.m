@@ -1,4 +1,4 @@
-function [outputs, params] = ComponentLoads(params)
+function [outputs, params] = WingLoads(params)
 
 %% A8 Deliverable 3 -- Wings
 
@@ -194,7 +194,7 @@ sgtitle(sprintf('Wing Loads: Case 3 -- Rolling Maneuver at $V_A$=%.1f m/s, full 
 % about the AC (a distinct Cm_delta effect) -- see the note printed above.
 
 %% Outputted Values
-outputs.ComponentLoads.wing = struct( ...
+outputs.WingLoads.wing = struct( ...
     'case_names', {case_names}, 'M_roots', M_roots, 'governing_case', case_names{i_gov}, 'M_root_governing', M_governing, ...
     'M_root_pos', M_pos(1), 'M_root_neg', M_neg(1), 'M_root_roll_down', M_roll_down(1), 'M_root_roll_up', M_roll_up(1), ...
     'T_root_pos', T_pos(1), 'T_root_neg', T_neg(1), 'T_root_roll_down', T_roll_down(1), 'T_root_roll_up', T_roll_up(1));
