@@ -1,38 +1,23 @@
 function [outputs, params] = TailLoads(params)
 
-% A8 Deliverable 3 -- Tail (lecture "08 - Structures", slides 22-26).
-% Same method as the wing: spanwise load, integrate to shear and bending;
-% new here is the torsion the fin's asymmetric side load puts on the
-% tailcone.
-%
-% Symmetric (horizontal tail, slide 23): balancing load (pitch equilibrium
-% at n+, slide 30's formula) plus the elevator increment, capped by the
-% tail's stall, evaluated at the worst of V_A, V_C and V_D.
-%
-% Asymmetric (fin/rudder, slide 24): full rudder at V_D -- fin side force
-% capped by fin stall, elliptical spanwise load on the fin sized to the
-% root moment, and the torsion + lateral bending that side force puts on
-% the tailcone. This deliverable stops at LOADS (matching A8's bullet
-% list); stress and margin against an installed section is Deliverable 5.
-%
-% eta_h, eta_v (tail efficiency), CL_max_tail and D_fus_tail (tailboom
-% diameter at the fin) are Sheet1 "structures" ASSUMPTIONs. None of this
-% codebase's other stability/trim analysis models tail efficiency, so
-% eta_h = eta_v = 1 keeps this consistent with the rest of the aircraft
-% model rather than introducing an unmatched wake-reduction factor.
-% l_tc (tailcone moment arm for lateral bending) is approximated as l_t
-% (the wing-to-tail arm) -- no separate tailcone-length parameter exists
-% anywhere in this codebase.
-% The tail's own spar chordwise location and Cm,ac are not modelled
-% separately: the torque calc reuses the wing's x_spar fraction and
-% x_ac=0.25 (thin-airfoil theory places the AC near quarter-chord for any
-% thin section, symmetric or not), and sets Cm,ac,h = 0 since the NACA
-% 0010 tail section is symmetric (zero pitching moment about its own AC).
+% Same method as the wing, but torsion is from fin's asymmetric side load onto tailcone.
+
+%% Initializations
 
 rho  = params.env.rho;
-MTOW = params.performance.MTOW;
+g    = params.env.g;
 S    = params.geometry.S_wing;
 c    = params.geometry.c_wing;
+
+% Mass table is the source of truth for structural analysis (team
+% decision): use its own sum as the aircraft weight here, not the
+% iterated params.performance.MTOW, so wing/tail/fuselage all size
+% against the same, consistent total.
+massTable = readtable('SizingParams.xlsx', 'Sheet', 'MassBudget');
+MTOM = sum(massTable.Mass_g)/1000; % kg
+MTOW = MTOM * g; % N
+fprintf('  [mass table] MTOM = %.3f kg (source of truth) vs iterated params.performance.MTOM = %.3f kg (%.1f%% difference)\n', ...
+    MTOM, params.performance.MTOM, 100*(MTOM-params.performance.MTOM)/params.performance.MTOM);
 
 n_pos = params.performance.n_limit_pos;
 V_A = params.performance.V_A;
@@ -45,7 +30,9 @@ CL_max_tail = params.structures.CL_max_tail;
 
 blue = [0.00 0.45 0.74]; orange = [0.85 0.33 0.10]; teal = [0.00 0.60 0.50];
 
-%% ================= HORIZONTAL TAIL (symmetric, full elevator) =================
+%% Computations 
+
+%HORIZONTAL TAIL
 S_h = params.geometry.S_hstab;
 c_h = params.geometry.c_hstab;
 b_h = params.geometry.span_hstab;
@@ -54,23 +41,17 @@ s_h = b_h/2;
 x_ac = params.geometry.x_ac;
 x_cg = params.geometry.x_cg_design;
 l_t  = params.geometry.l_t;
-CM_ac_w = params.aero.CM_ac_w; % wing's own section/AC moment -- a pure couple, NOT the aircraft-total CM_0
+CM_ac_w = params.aero.CM_ac_w; 
 CL_delta_e_Tail = params.aero.CL_Alpha_Tail * params.aero.tau_e;
 delta_e_max = deg2rad(params.geometry.delta_e_limit_deg);
 
-% Balancing load (pitch equilibrium at n+, slide 30) plus the elevator
-% increment (slide 23), capped by the tail's own stall. Mac uses CM_ac_w,
-% not the aircraft-total CM_0: the moment equation already carries the
-% lift-arm effect explicitly via the n*MTOW*(x_cg-x_ac) term, so folding
-% in CM_0 (which itself already includes a CL_0*(x_cg-x_ac) contribution)
-% would double-count that arm.
 L_balance   = @(V) (n_pos*MTOW*(x_cg-x_ac)*c + 0.5*rho*V.^2*S*c*CM_ac_w) / l_t;
 dL_elev     = @(V) 0.5*rho*V.^2*S_h*CL_delta_e_Tail*delta_e_max;
 L_stall_h   = @(V) 0.5*rho*V.^2*S_h*eta_h*CL_max_tail;
 L_raw_h     = @(V) L_balance(V) + dL_elev(V);
 L_design_h  = @(V) sign(L_raw_h(V)) .* min(abs(L_raw_h(V)), L_stall_h(V));
 
-V_sweep_h = linspace(10, V_D, 200); % starts at 10 m/s to match the lecture's reference plot (slide 23)
+V_sweep_h = linspace(10, V_D, 200);
 L_h_curve = L_design_h(V_sweep_h);
 L_h_stall_curve = L_stall_h(V_sweep_h);
 
@@ -98,28 +79,27 @@ y_h = linspace(0, s_h, 300);
 c_ell_h = (4*S_h/(pi*b_h)) * sqrt(max(1 - (2*y_h/b_h).^2, 0));
 c_S_h = 0.5*(c_h + c_ell_h);
 IcS_h = trapz(y_h, c_S_h);
-k_h = (abs(L_h_design_signed)/2) / IcS_h; % STATE this normalising factor
+k_h = (abs(L_h_design_signed)/2) / IcS_h;
 w_h = sign(L_h_design_signed) * k_h * c_S_h;
 [V_h, M_h] = local_tipIntegrate(y_h, w_h);
 
-% Torque (bonus, same method as the wing -- see header note on the
-% assumptions this reuses):
+% Torque
 e_arm_h = (params.structures.x_spar - x_ac) * c_h;
-t_h = w_h*e_arm_h; % + q*c^2*Cm_ac,h, but Cm_ac,h = 0 for a symmetric section
+t_h = w_h*e_arm_h;
 T_h = local_tipIntegrate(y_h, t_h);
 
 fprintf('  Shrenk normalising factor k_h = %.2f N/m^2 (semispan integral = |L_h|/2 = %.2f N)\n', k_h, abs(L_h_design_signed)/2);
 fprintf('  root: M(0) = %+.3f N*m, T(0) = %+.4f N*m; BCs at tip: M(s)=%.2e N*m, T(s)=%.2e N*m (should be ~0)\n', ...
     M_h(1), T_h(1), M_h(end), T_h(end));
 
-%% ================= VERTICAL TAIL / FIN (asymmetric, full rudder at V_D) =================
-S_v = params.geometry.S_fin; % single-fin area (n_vfins = 1)
+% VERTICAL TAIL / FIN
+S_v = params.geometry.S_fin;
 H   = params.geometry.span_vstab;
 av  = params.aero.CL_Alpha_VT;
 tau_r = params.aero.tau_r;
 delta_r_max = deg2rad(params.geometry.delta_r_limit);
 D_fus = params.structures.D_fus_tail;
-l_tc  = params.geometry.l_t; % APPROXIMATION -- no separate tailcone-length parameter; see header note
+l_tc  = params.geometry.l_t; 
 
 Yv_linear_fn = @(V) 0.5*rho*V.^2*S_v*eta_v*av*tau_r*delta_r_max;
 Yv_stall_fn  = @(V) 0.5*rho*V.^2*S_v*eta_v*CL_max_tail;
@@ -136,25 +116,17 @@ capped_rudder = Yv_linear > Yv_stall;
 z = linspace(0, H, 300);
 w_fin = (4*Yv/(pi*H)) * sqrt(max(1 - (z/H).^2, 0));
 [V_fin, M_fin] = local_tipIntegrate(z, w_fin);
-M_fin_closed_form = 4*Yv*H/(3*pi); % closed-form cross-check of the elliptical integral
+M_fin_closed_form = 4*Yv*H/(3*pi); 
 
 z_cp = D_fus/2 + 4*H/(3*pi);
-T_tailcone   = Yv*z_cp;   % concentrated torque, applied at the fin end
-M_l_tailcone = Yv*l_tc;   % bending from that same force, at the fuselage (root) end
+T_tailcone   = Yv*z_cp;   
+M_l_tailcone = Yv*l_tc;
 
-% Yv acts as a single concentrated load at the fin end of the tailcone,
-% with nothing else loading the tailcone along its length. That makes
-% torsion T a CONSTANT along the whole length (same reason shear is
-% constant between a point load and its support), while the lateral
-% bending M_l is NOT a single number -- it ramps linearly from Yv*l_tc at
-% the fuselage root down to zero at the fin end. Built as a proper
-% distribution here rather than two disconnected scalars, using the same
-% root-to-tip convention as the wing and horizontal tail (x=0 at the
-% root, where bending peaks; x increases out to the free/fin end, where
-% it goes to zero):
-x_tc = linspace(0, l_tc, 200); % x=0 at the fuselage root, x=l_tc at the fin end
+x_tc = linspace(0, l_tc, 200);
 T_tc   = T_tailcone * ones(size(x_tc));
 M_l_tc = Yv * (l_tc - x_tc);
+
+%% Console Outputs and Plotting
 
 fprintf('\n=== Vertical tail / fin: asymmetric case (full rudder, %.0f deg, at V_D) ===\n', params.geometry.delta_r_limit);
 fprintf('  evaluated at V_D = %.1f m/s -- the tail''s stated design point (dive speed, slides 9 and 22)\n', V_D);
@@ -164,13 +136,8 @@ fprintf('  fin root bending M(0) = %.3f N*m (closed-form 4 Yv H/(3 pi) = %.3f N*
 fprintf('  z_cp = D_fus/2 + 4H/(3 pi) = %.4f m; torsion into the tailcone T = Yv*z_cp = %.3f N*m (constant along the tailcone)\n', z_cp, T_tailcone);
 fprintf('  lateral bending into the tailcone: M_l(root)=%.3f N*m at the fuselage, decreasing to 0 at the fin end (l_tc ~ l_t = %.3f m, APPROXIMATION)\n', M_l_tailcone, l_tc);
 
-%% ---- Figure: horizontal tail (symmetric) ----
-% Two panels, matching the lecture's own layout for this case: the design
-% load against airspeed (left), and running load + bending + torque
-% together on one panel with a dual axis (right) -- w is 1-2 orders of
-% magnitude bigger than M and T here, the same reason the fin got split
-% into separate panels, but the lecture's own reference figure for this
-% specific case uses a shared dual-axis panel, so this matches that.
+% Horizontal tail (symmetric)
+
 figure('Name','Tail Loads - Horizontal Tail (Symmetric)','Color','w','Position',[100 100 1150 550],'WindowStyle','docked');
 tiledlayout(1,2,'TileSpacing','loose','Padding','compact');
 
@@ -207,12 +174,7 @@ legend('Location', 'best', 'Interpreter', 'latex');
 sgtitle(sprintf('Symmetric case: full elevator, design point at $%s$; ultimate 1.5$\\times$', point_labels{i_gov_h}), ...
     'Interpreter', 'latex', 'FontWeight', 'bold');
 
-%% ---- Figure: vertical tail / fin (asymmetric) ----
-% Two load panels, formatted the same way as the symmetric-case figure:
-% running load + bending on one dual-axis panel (fin), and torsion +
-% lateral bending on one shared-axis panel (tailcone) -- T and M_l are
-% both N*m and only ~5x apart, close enough for one axis to stay readable
-% without a dual axis.
+% Vertical tail / fin (asymmetric)
 figure('Name','Tail Loads - Vertical Tail (Asymmetric Rudder)','Color','w','Position',[1200 100 1150 650],'WindowStyle','docked');
 tiledlayout(2,2,'TileSpacing','loose','Padding','compact');
 
@@ -257,7 +219,7 @@ text(0, 0.25, sprintf('l_{tc} ~ l_t = %.3f m  (tailcone arm approximated by the 
 sgtitle('Asymmetric case: full rudder, design point at $V_D$; ultimate 1.5$\times$', ...
     'Interpreter', 'latex', 'FontWeight', 'bold');
 
-%% ---- Outputs ----
+% Outputs
 outputs.TailLoads.tail = struct( ...
     'horizontal_tail_governing_speed', V_h_governing, 'horizontal_tail_governing_label', point_labels{i_gov_h}, ...
     'horizontal_tail_capped', capped_points(i_gov_h), 'horizontal_tail_L_design', L_h_design_signed, ...
@@ -265,7 +227,6 @@ outputs.TailLoads.tail = struct( ...
     'fin_Yv', Yv, 'fin_capped', capped_rudder, 'fin_M_root', M_fin(1), ...
     'tailcone_T', T_tailcone, 'tailcone_Ml', M_l_tailcone, 'tailcone_zcp', z_cp);
 
-% Carry the tail loads forward (D5 stress/sizing needs these):
 params.structures.horizontal_tail_M_root = M_h(1);
 params.structures.horizontal_tail_T_root = T_h(1);
 params.structures.fin_M_root   = M_fin(1);
@@ -279,9 +240,6 @@ function out = local_ternary(cond, a, b)
 end
 
 function [Q, R] = local_tipIntegrate(y, q)
-    % Q(y) = int_y^s q(y') dy';  R(y) = int_y^s Q(y') dy'  (cantilever,
-    % integrated from the free tip; BCs Q(s)=R(s)=0). Reused for
-    % load->shear->moment and for running-torque->torque (take Q only).
     Total_q = trapz(y, q);
     Q = Total_q - cumtrapz(y, q);
     Total_Q = trapz(y, Q);
