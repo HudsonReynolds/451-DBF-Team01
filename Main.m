@@ -1,22 +1,42 @@
-% Main script: Run all of the sizing and analysis in one place. 
-
-
-clear;clc;close all
+clear;clc;close all;
 
 Setup() % setup plotting & paths for everything
 
 params = readParams("SizingParams.xlsx");
 
-% run all of the sizing:
-InitialVehicleSizingConstraint(params);
+% Iterate between vehicle weight and aerodynamic performance
+MTOM_guess = params.performance.MTOM;
+err = 1;
 
-% TODO: Weight is both in the excel and here. UPDATE
-params.W = VehicleWeightEstimation(params);
+while err > 0.001
+    params = InitialCalcs(params);
+    
+    params = DragBuildUp(params);
+    
+    params = calcAero(params);
+    
+    params = VehicleWeightEstimation(params);
 
-% Drag build-up
-params.CD_0 = DragBuildUp(params);
-% 
-% stabilility analysis
-A5B(params);
+    MTOM_new = params.performance.MTOM;
+    err = abs((MTOM_guess - MTOM_new) / MTOM_guess);
+    MTOM_guess = MTOM_new;
+end
 
-PropulsionSizing(params);
+params = A5B(params);
+
+ServoSizing(params);
+
+params = PropulsionSizing(params);
+
+[~, params] = VnDiagram(params);
+
+VnOperatingEnvelope(params);
+
+[~, params] = WingLoads(params);
+
+[~, params] = TailLoads(params);
+
+[~, params] = FuselageLoads(params);
+
+[~, params] = TakeOffRotation(params);
+
