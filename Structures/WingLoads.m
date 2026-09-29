@@ -99,7 +99,7 @@ if i_gov == 3
     fprintf('      since the attachment also reacts the left/right rolling moment, not just the lift.\n');
 end
 
-blue = [0.00 0.45 0.74]; orange = [0.85 0.33 0.10];
+blue = [0.00 0.45 0.74]; orange = [0.85 0.33 0.10]; red = [0.80 0.00 0.00]; % red = driving/critical load marker
 
 % ---- Figure: Case 1, positive symmetric ----
 figure('Name','Wing Loads - Positive Symmetric','Color','w','Position',[100 100 1000 700],'WindowStyle','docked');
@@ -109,23 +109,27 @@ nexttile; hold on; box on; grid on;
 plot(y, w_pos, '-', 'Color', blue, 'LineWidth', 1.6, 'DisplayName', 'Shrenk: $w=k\,c_S$');
 plot(y, k_pos*c*ones(size(y)), 'k--', 'DisplayName', 'planform chord (rectangular, no taper)');
 plot(y, k_pos*c_ell, 'r:', 'DisplayName', 'elliptical shape');
+plot(0, w_pos(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 xlabel('spanwise station y (m)'); ylabel('running load w (N/m)');
 title(sprintf('Running load at n=%+.2f', n_pos));
 legend('Location', 'best', 'Interpreter', 'latex');
 
 nexttile; hold on; box on; grid on;
 plot(y, V_pos, 'Color', blue, 'LineWidth', 1.6);
+plot(0, V_pos(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 xlabel('spanwise station y (m)'); ylabel('shear V (N)');
 title(sprintf('Shear, integrated from the tip: V(0)=%.1f N', V_pos(1)));
 
 nexttile; hold on; box on; grid on;
 plot(y, M_pos, 'Color', blue, 'LineWidth', 1.6);
+plot(0, M_pos(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 xlabel('spanwise station y (m)'); ylabel('bending moment M (N$\cdot$m)', 'Interpreter', 'latex');
 title(sprintf('Bending, integrated from the tip: M(0)=%.2f N*m', M_pos(1)));
 
 nexttile; hold on; box on; grid on;
 plot(y, t_pos, '--', 'Color', blue, 'LineWidth', 1.4, 'DisplayName', 'running torque t (N$\cdot$m/m)');
 plot(y, T_pos, '-', 'Color', blue, 'LineWidth', 1.8, 'DisplayName', 'torque T (N$\cdot$m)');
+plot(0, T_pos(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 yline(0, 'k-', 'HandleVisibility', 'off');
 xlabel('spanwise station y (m)'); ylabel('N$\cdot$m/m  or  N$\cdot$m', 'Interpreter', 'latex');
 title(sprintf('Torque, integrated from the tip: T(0)=%.2f N*m', T_pos(1)));
@@ -141,6 +145,7 @@ nexttile; hold on; box on; grid on;
 plot(y, w_neg, '-', 'Color', orange, 'LineWidth', 1.6, 'DisplayName', 'Shrenk: $w=k\,c_S$');
 plot(y, k_neg*c*ones(size(y)), 'k--', 'DisplayName', 'planform chord (rectangular, no taper)');
 plot(y, k_neg*c_ell, 'r:', 'DisplayName', 'elliptical shape');
+plot(0, w_neg(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 yline(0, 'k-', 'HandleVisibility', 'off');
 xlabel('spanwise station y (m)'); ylabel('running load w (N/m)');
 title(sprintf('Running load at n=%+.2f', n_neg));
@@ -148,12 +153,14 @@ legend('Location', 'best', 'Interpreter', 'latex');
 
 nexttile; hold on; box on; grid on;
 plot(y, V_neg, 'Color', orange, 'LineWidth', 1.6);
+plot(0, V_neg(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 yline(0, 'k-', 'HandleVisibility', 'off');
 xlabel('spanwise station y (m)'); ylabel('shear V (N)');
 title(sprintf('Shear, integrated from the tip: V(0)=%.1f N', V_neg(1)));
 
 nexttile; hold on; box on; grid on;
 plot(y, M_neg, 'Color', orange, 'LineWidth', 1.6);
+plot(0, M_neg(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 yline(0, 'k-', 'HandleVisibility', 'off');
 xlabel('spanwise station y (m)'); ylabel('bending moment M (N$\cdot$m)', 'Interpreter', 'latex');
 title(sprintf('Bending, integrated from the tip: M(0)=%.2f N*m', M_neg(1)));
@@ -161,6 +168,7 @@ title(sprintf('Bending, integrated from the tip: M(0)=%.2f N*m', M_neg(1)));
 nexttile; hold on; box on; grid on;
 plot(y, t_neg, '--', 'Color', orange, 'LineWidth', 1.4, 'DisplayName', 'running torque t (N$\cdot$m/m)');
 plot(y, T_neg, '-', 'Color', orange, 'LineWidth', 1.8, 'DisplayName', 'torque T (N$\cdot$m)');
+plot(0, T_neg(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 yline(0, 'k-', 'HandleVisibility', 'off');
 xlabel('spanwise station y (m)'); ylabel('N$\cdot$m/m  or  N$\cdot$m', 'Interpreter', 'latex');
 title(sprintf('Torque, integrated from the tip: T(0)=%.2f N*m', T_neg(1)));
@@ -176,6 +184,7 @@ nexttile; hold on; box on; grid on;
 plot(y, w_roll_down, '-', 'Color', orange, 'LineWidth', 1.6, 'DisplayName', 'down-going wing');
 plot(y, w_roll_up, '--', 'Color', orange, 'LineWidth', 1.4, 'DisplayName', 'up-going wing');
 plot(y, w_pos, ':', 'Color', blue, 'LineWidth', 1.2, 'DisplayName', 'baseline (no aileron)');
+plot(0, w_roll_down(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 xlabel('spanwise station y (m)'); ylabel('running load w (N/m)');
 title('Running load');
 legend('Location', 'best');
@@ -183,12 +192,14 @@ legend('Location', 'best');
 nexttile; hold on; box on; grid on;
 plot(y, V_roll_down, '-', 'Color', orange, 'LineWidth', 1.6);
 plot(y, V_roll_up, '--', 'Color', orange, 'LineWidth', 1.4);
+plot(0, V_roll_down(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 xlabel('spanwise station y (m)'); ylabel('shear V (N)');
 title(sprintf('Shear: down %.1f N, up %.1f N at root', V_roll_down(1), V_roll_up(1)));
 
 nexttile; hold on; box on; grid on;
 plot(y, M_roll_down, '-', 'Color', orange, 'LineWidth', 1.6, 'DisplayName', 'down-going wing');
 plot(y, M_roll_up, '--', 'Color', orange, 'LineWidth', 1.4, 'DisplayName', 'up-going wing');
+plot(0, M_roll_down(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 xlabel('spanwise station y (m)'); ylabel('bending moment M (N$\cdot$m)', 'Interpreter', 'latex');
 title(sprintf('Bending: down %.1f, up %.1f N*m at root', M_roll_down(1), M_roll_up(1)));
 legend('Location', 'best');
@@ -196,6 +207,7 @@ legend('Location', 'best');
 nexttile; hold on; box on; grid on;
 plot(y, T_roll_down, '-', 'Color', orange, 'LineWidth', 1.6, 'DisplayName', 'down-going wing');
 plot(y, T_roll_up, '--', 'Color', orange, 'LineWidth', 1.4, 'DisplayName', 'up-going wing');
+plot(0, T_roll_down(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 xlabel('spanwise station y (m)'); ylabel('torque T (N$\cdot$m)', 'Interpreter', 'latex');
 title(sprintf('Torque: down %.2f, up %.2f N*m at root (lift-offset + $C_{m,ac}$ only)', T_roll_down(1), T_roll_up(1)), 'Interpreter', 'latex');
 legend('Location', 'best');

@@ -28,7 +28,7 @@ eta_h = params.structures.eta_h;
 eta_v = params.structures.eta_v;
 CL_max_tail = params.structures.CL_max_tail;
 
-blue = [0.00 0.45 0.74]; orange = [0.85 0.33 0.10]; teal = [0.00 0.60 0.50];
+blue = [0.00 0.45 0.74]; orange = [0.85 0.33 0.10]; teal = [0.00 0.60 0.50]; red = [0.80 0.00 0.00]; % red = driving/critical load marker
 
 %% Computations 
 
@@ -146,7 +146,7 @@ plot(V_sweep_h, abs(L_h_curve), '-', 'Color', blue, 'LineWidth', 1.6, 'DisplayNa
 plot(V_sweep_h, L_h_stall_curve, ':', 'Color', orange, 'LineWidth', 1.4, 'DisplayName', 'stall cap, $q S_h \eta_h C_{L,max}$');
 yline(MTOW, '-.', sprintf('aircraft weight %.1f N', MTOW), 'Color', [0.20 0.60 0.30], 'LineWidth', 1.2, ...
     'LabelHorizontalAlignment', 'left', 'HandleVisibility', 'off');
-plot(V_h_governing, L_h_design, 'ko', 'MarkerFaceColor', 'k', 'MarkerSize', 7, 'HandleVisibility', 'off');
+plot(V_h_governing, L_h_design, 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 yl = ylim; row_y_h = yl(1) + [0.03, 0.10]*(yl(2)-yl(1));
 for i = 1:3
     xline(V_points(i), ':', 'Color', [0.4 0.4 0.4], 'HandleVisibility', 'off');
@@ -165,6 +165,7 @@ ylabel('running load w (N/m)');
 yyaxis right
 plot(y_h, M_h, '-', 'LineWidth', 1.6, 'DisplayName', 'bending M');
 plot(y_h, T_h, '--', 'LineWidth', 1.6, 'DisplayName', 'torque T');
+plot(0, M_h(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 ylabel('M, T (N$\cdot$m)', 'Interpreter', 'latex');
 ylim([0, max([M_h, T_h])*1.1]); % clip to 0 -- neither M nor T goes negative, don't let autoscale pad below it
 xlabel('station from centreline y (m)');
@@ -181,7 +182,7 @@ tiledlayout(2,2,'TileSpacing','loose','Padding','compact');
 nexttile; hold on; box on; grid on;
 plot(V_sweep_v, Yv_curve, '-', 'Color', teal, 'LineWidth', 1.6, 'DisplayName', 'design load, $Y_v$');
 plot(V_sweep_v, Yv_stall_curve, ':', 'Color', orange, 'LineWidth', 1.4, 'DisplayName', 'stall cap, $q S_v \eta_v C_{L,max}$');
-plot(V_D, Yv, 'ko', 'MarkerFaceColor', 'k', 'MarkerSize', 7, 'HandleVisibility', 'off');
+plot(V_D, Yv, 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 xline(V_D, ':', 'Color', [0.4 0.4 0.4], 'HandleVisibility', 'off');
 yl = ylim; text(V_D, yl(1)+0.03*(yl(2)-yl(1)), sprintf('$V_D=%.1f$', V_D), ...
     'HorizontalAlignment', 'center', 'Color', [0.35 0.35 0.35], 'FontSize', 9, 'Interpreter', 'latex');
@@ -195,6 +196,7 @@ plot(z, w_fin, '-', 'LineWidth', 1.6, 'DisplayName', 'running load w');
 ylabel('running load w (N/m)');
 yyaxis right
 plot(z, M_fin, '-', 'LineWidth', 1.6, 'DisplayName', 'bending M');
+plot(0, M_fin(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 ylabel('bending M (N$\cdot$m)', 'Interpreter', 'latex');
 ylim([0, max(M_fin)*1.1]);
 xlabel('height above fin root z (m)');
@@ -204,6 +206,7 @@ legend('Location', 'best', 'Interpreter', 'latex');
 nexttile; hold on; box on; grid on;
 plot(x_tc, T_tc, '--', 'Color', teal, 'LineWidth', 1.6, 'DisplayName', 'torsion T');
 plot(x_tc, M_l_tc, '-', 'Color', teal, 'LineWidth', 1.8, 'DisplayName', 'lateral bending M_l');
+plot(0, M_l_tc(1), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 ylim([0, max(M_l_tc)*1.1]);
 xlabel('station along the tailcone, from the fuselage root (m)'); ylabel('N$\cdot$m', 'Interpreter', 'latex');
 title(sprintf('Tailcone: T = %.2f N*m (constant), $M_l$(root) = %.2f N*m', T_tailcone, M_l_tailcone), 'Interpreter', 'latex');

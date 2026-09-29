@@ -38,3 +38,5 @@ VnOperatingEnvelope(params);
 
 [~, params] = FuselageLoads(params);
 
+[~, params] = TakeOffRotation(params);
+

@@ -18,7 +18,7 @@ c = params.geometry.c_wing;
 massTable = readtable('SizingParams.xlsx', 'Sheet', 'MassBudget');
 MTOM = sum(massTable.Mass_g)/1000; % kg
 MTOW = MTOM * g; % N
-x_cg_abs = sum(massTable.Mass_g .* massTable.Station_m) / sum(massTable.Mass_g);
+x_cg_abs = sum(massTable.Mass_g .* massTable.X_m) / sum(massTable.Mass_g);
 
 x_LE_wing = params.structures.x_LE_wing;
 x_ac_abs  = x_LE_wing + params.geometry.x_ac * c;
@@ -68,8 +68,8 @@ if sum(main_mask) ~= 1
     error('FuselageLoads:massTable', ['MassBudget tab must have exactly one row named ''Main gear (pair)'' ' ...
         '(found %d) -- the hard-landing lever-rule split needs it by name.'], sum(main_mask));
 end
-x_nose_gear = massTable.Station_m(nose_mask);
-x_main_gear = massTable.Station_m(main_mask);
+x_nose_gear = massTable.X_m(nose_mask);
+x_main_gear = massTable.X_m(main_mask);
 b_w = x_main_gear - x_nose_gear;
 d_nose = x_cg_abs - x_nose_gear; 
 d_main = x_main_gear - x_cg_abs;
@@ -84,12 +84,12 @@ fprintf('  F_nose = %.2f N (%.0f%%), F_main = %.2f N (%.0f%%) [F_nose+F_main = %
     F_nose, 100*F_nose/R, F_main, 100*F_main/R, F_nose+F_main, R);
 
 % BEAM: INTEGRATE FROM THE NOSE
-x_max = max([massTable.Station_m; x_t_abs]) * 1.08;
+x_max = max([massTable.X_m; x_t_abs]) * 1.08;
 X = linspace(0, x_max, 2000);
 
 % Case 1 (maneuver)
 F_inertia_man = -n_pos * (massTable.Mass_g/1000) * g;
-stations_man  = [massTable.Station_m; x_ac_abs; x_t_abs];
+stations_man  = [massTable.X_m; x_ac_abs; x_t_abs];
 forces_man    = [F_inertia_man; Lw_man; Lt_man];
 V_man = zeros(size(X));
 for i = 1:numel(stations_man)
@@ -99,7 +99,7 @@ M_man = cumtrapz(X, V_man) + Mac * (X >= x_ac_abs);
 
 % Case 2 (hard landing)
 F_inertia_land = -n_L * (massTable.Mass_g/1000) * g;
-stations_land  = [massTable.Station_m; x_nose_gear; x_main_gear];
+stations_land  = [massTable.X_m; x_nose_gear; x_main_gear];
 forces_land    = [F_inertia_land; F_nose; F_main];
 V_land = zeros(size(X));
 for i = 1:numel(stations_land)
@@ -120,40 +120,77 @@ fprintf('  Ultimate (1.5x limit): maneuver |M|_max = %.2f N*m, hard landing |M|_
 
 %% Plotting
 
-blue = [0.00 0.45 0.74]; orange = [0.85 0.33 0.10];
+blue = [0.00 0.45 0.74]; orange = [0.85 0.33 0.10]; red = [0.80 0.00 0.00]; % red = driving/critical load marker
 
-figure('Name','Fuselage Loads','Color','w','Position',[100 100 950 900],'WindowStyle','docked');
-tiledlayout(3,1,'TileSpacing','compact','Padding','compact');
+figure('Name','Fuselage Cases','Color','w','Position',[100 100 950 650],'WindowStyle','docked');
+tiledlayout(2,1,'TileSpacing','compact','Padding','compact');
 
-% Panel 1: applied loads for the maneuver case (inertia + reactions + couple).
+% Panel 1: applied loads for the maneuver case (inertia + reactions + couple + CG).
 nexttile; hold on; box on; grid on;
-stem(massTable.Station_m, F_inertia_man, 'Color', orange, 'Marker', 'v', 'MarkerFaceColor', orange, 'MarkerSize', 5, 'DisplayName', 'inertia loads');
+y_top = max(Lw_man,Lt_man)*1.6; % extra headroom vs before, for the CG label near the top
+y_bot = min(F_inertia_man)*1.3;
+ylim([y_bot, y_top]);
+stem(massTable.X_m, F_inertia_man, 'Color', orange, 'Marker', 'v', 'MarkerFaceColor', orange, 'MarkerSize', 5, 'DisplayName', 'inertia loads');
 stem(x_ac_abs, Lw_man, 'Color', [0.20 0.60 0.30], 'LineWidth', 1.8, 'Marker', '^', 'MarkerFaceColor', [0.20 0.60 0.30], 'MarkerSize', 8, 'DisplayName', 'wing reaction, L_w');
 stem(x_t_abs, Lt_man, 'Color', [0.70 0.20 0.60], 'LineWidth', 1.8, 'Marker', '^', 'MarkerFaceColor', [0.70 0.20 0.60], 'MarkerSize', 8, 'DisplayName', 'tail load, L_t');
+plot(x_cg_abs, 0, 'o', 'MarkerSize', 8, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'w', 'LineWidth', 1.5, 'DisplayName', 'CG');
 yline(0, 'k-', 'HandleVisibility', 'off');
-ylim([min(F_inertia_man)*1.3, max(Lw_man,Lt_man)*1.35]); % headroom above L_w so the M_ac label doesn't crowd the title
-text(x_ac_abs, Lw_man*0.75, sprintf('  M_{ac}=%.2f N*m', Mac), 'FontSize', 8, 'Color', [0.35 0.35 0.35]);
+text(x_ac_abs, Lw_man, sprintf('  L_w=%.1f N', Lw_man), 'FontSize', 8, 'Color', [0.20 0.60 0.30], 'VerticalAlignment', 'bottom');
+text(x_t_abs, Lt_man, sprintf('  L_t=%.1f N', Lt_man), 'FontSize', 8, 'Color', [0.70 0.20 0.60], 'VerticalAlignment', 'bottom');
+text(x_ac_abs, Lw_man*0.6, sprintf('  M_{ac}=%.2f N*m', Mac), 'FontSize', 8, 'Color', [0.35 0.35 0.35]);
+text(x_cg_abs, y_top*0.93, sprintf('CG, x=%.3f m', x_cg_abs), 'FontSize', 8, 'Color', 'k', 'HorizontalAlignment', 'left');
 xlabel('station from the nose, x (m)'); ylabel('point load (N)');
-title(sprintf('Maneuver case at $V_A$=%.1f m/s, n=%+.2f: inertia loads, wing/tail reactions, couple at the wing', V_A, n_pos), 'Interpreter', 'latex');
+title(sprintf('Maneuver case at $V_A$=%.1f m/s, n=%+.2f: inertia loads, wing/tail reactions, couple at the wing, and CG', V_A, n_pos), 'Interpreter', 'latex');
 legend('Location', 'best');
-xlim([0, x_max]); % same range on all three panels so stations line up vertically
+xlim([0, x_max]); % same range on both panels so stations line up vertically
 
-% Panel 2: shear, both cases overlaid.
+% Panel 2: applied loads for the hard landing case (inertia + gear reactions, no lift).
+nexttile; hold on; box on; grid on;
+y_top_L = max(F_nose,F_main)*1.6;
+y_bot_L = min(F_inertia_land)*1.3;
+ylim([y_bot_L, y_top_L]);
+stem(massTable.X_m, F_inertia_land, 'Color', orange, 'Marker', 'v', 'MarkerFaceColor', orange, 'MarkerSize', 5, 'DisplayName', 'inertia loads');
+stem(x_nose_gear, F_nose, 'Color', [0.20 0.60 0.30], 'LineWidth', 1.8, 'Marker', '^', 'MarkerFaceColor', [0.20 0.60 0.30], 'MarkerSize', 8, 'DisplayName', 'nose gear reaction, F_{nose}');
+stem(x_main_gear, F_main, 'Color', [0.20 0.60 0.30], 'LineWidth', 1.8, 'Marker', '^', 'MarkerFaceColor', [0.20 0.60 0.30], 'MarkerSize', 8, 'DisplayName', 'main gear reaction, F_{main}');
+plot(x_cg_abs, 0, 'o', 'MarkerSize', 8, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'w', 'LineWidth', 1.5, 'DisplayName', 'CG');
+yline(0, 'k-', 'HandleVisibility', 'off');
+text(x_nose_gear, F_nose, sprintf('  F_{nose}=%.1f N', F_nose), 'FontSize', 8, 'Color', [0.20 0.60 0.30], 'VerticalAlignment', 'bottom');
+text(x_main_gear, F_main, sprintf('  F_{main}=%.1f N', F_main), 'FontSize', 8, 'Color', [0.20 0.60 0.30], 'VerticalAlignment', 'bottom');
+text(x_cg_abs, y_top_L*0.93, sprintf('CG, x=%.3f m', x_cg_abs), 'FontSize', 8, 'Color', 'k', 'HorizontalAlignment', 'left');
+xlabel('station from the nose, x (m)'); ylabel('point load (N)');
+title(sprintf('Hard landing case, n_L=%.2f g (no lift): inertia loads and gear reactions', n_L));
+legend('Location', 'best');
+xlim([0, x_max]);
+
+sgtitle(sprintf('Fuselage: Applied Loads by Case, MTOM=%.2f kg, CG at x=%.3f m', MTOM, x_cg_abs), ...
+    'Interpreter', 'latex', 'FontWeight', 'bold');
+
+% ---- Figure: shear and bending moment ----
+figure('Name','Fuselage Loads','Color','w','Position',[100 100 950 650],'WindowStyle','docked');
+tiledlayout(2,1,'TileSpacing','compact','Padding','compact');
+
+% Panel 1: shear, both cases overlaid.
 nexttile; hold on; box on; grid on;
 plot(X, V_man, '-', 'Color', blue, 'LineWidth', 1.6, 'DisplayName', sprintf('maneuver, n=%+.2f', n_pos));
 plot(X, V_land, '--', 'Color', orange, 'LineWidth', 1.6, 'DisplayName', sprintf('hard landing, n_L=%.1f, no lift', n_L));
+if abs(M_man(i_env)) >= abs(M_land(i_env))
+    V_at_env = V_man(i_env);
+else
+    V_at_env = V_land(i_env);
+end
+plot(X(i_env), V_at_env, 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 yline(0, 'k-', 'HandleVisibility', 'off');
 xlabel('station from the nose, x (m)'); ylabel('shear V (N)');
 title('Shear force V(x): sum of the loads ahead of x -- returns to 0 at the tail');
 legend('Location', 'best');
 xlim([0, x_max]);
 
-% Panel 3: bending moment, both cases plus the envelope.
+% Panel 2: bending moment, both cases plus the envelope.
 nexttile; hold on; box on; grid on;
 plot(X, M_man, '-', 'Color', blue, 'LineWidth', 1.6, 'DisplayName', sprintf('maneuver, n=%+.2f', n_pos));
 plot(X, M_land, '--', 'Color', orange, 'LineWidth', 1.6, 'DisplayName', sprintf('hard landing, n_L=%.1f', n_L));
 plot(X, M_envelope, ':', 'Color', [0.2 0.2 0.2], 'LineWidth', 1.4, 'DisplayName', 'envelope |M|');
-plot(X(i_env), M_env_max, 'ko', 'MarkerFaceColor', 'k', 'MarkerSize', 6, 'HandleVisibility', 'off');
+plot(X(i_env), M_env_max, 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
 yline(0, 'k-', 'HandleVisibility', 'off');
 xlabel('station from the nose, x (m)'); ylabel('bending moment M (N$\cdot$m)', 'Interpreter', 'latex');
 title(sprintf('Bending moment M(x), with the design envelope: $|M|_{max}$=%.2f N*m at x=%.2f m (%s governs)', M_env_max, X(i_env), governing_case), 'Interpreter', 'latex');
