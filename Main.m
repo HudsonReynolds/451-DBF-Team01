@@ -1,4 +1,4 @@
-clear;clc;
+clear;clc;close all;
 
 Setup() % setup plotting & paths for everything
 
