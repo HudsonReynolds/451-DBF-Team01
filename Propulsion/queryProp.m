@@ -37,13 +37,10 @@ function r = queryProp(rpm, V, Fs, fieldNames, fieldUnits, nrm)
     end
 
     % A NaN in the (first) result means the point was outside the data hull.
+    % This is expected, routine behaviour for a full-range sweep (e.g. low
+    % throttle simply can't reach high airspeed in the tabulated data) --
+    % callers that care can check r.inRange themselves, so this does not
+    % warn on every call.
     r.inRange = ~isnan(firstVals);
     r.units   = cell2struct(fieldUnits(:), fieldNames(:), 1);
-
-    if ~all(r.inRange(:))
-        warning('queryProp:outOfRange', ...
-            ['%d of %d query point(s) fall outside the tabulated (RPM,V) ' ...
-             'envelope and were set to NaN.'], ...
-            nnz(~r.inRange), numel(r.inRange));
-    end
 end

@@ -74,7 +74,7 @@ alpha_of.Elevator = alpha_tail;
 alpha_of.Rudder   = zeros(size(V)); % rudder Ch is driven by sideslip/deflection, not aircraft alpha, so it stays airspeed-independent here
 
 %% ---- Required vs. available torque, per surface ----
-figure('Name','Servo Required vs Available Torque','Color','w','Position',[100 100 1200 340],'WindowStyle','docked');
+figure('Name','Servo Required vs Available Torque','Color','w','WindowStyle','docked');
 tiledlayout(1,3,'TileSpacing','compact','Padding','compact');
 
 fprintf('=== Servo sizing: required vs. available torque (rail voltage = %.1f V) ===\n', V_rail);

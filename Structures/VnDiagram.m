@@ -16,7 +16,15 @@ CL_alpha = params.aero.CL_Alpha;
 rho = params.env.rho;
 g = params.env.g;
 
-V_S = params.performance.V_S;
+% Self-consistent stall speed for THIS diagram's own rho/S/CL_max/MTOW
+% (same method already used below for V_S_neg) -- guarantees the stall
+% boundary curve passes through exactly n=1 at V_S and exactly n=n+ at
+% V_A, so it stays flush with the limit-load-factor line no matter how
+% CL_max or MTOW move during the sizing iteration. The Excel-input
+% params.performance.V_S is an independently-set target used earlier
+% (e.g. V_TO sizing) and can drift out of sync with this diagram's own
+% values -- not used here for that reason.
+V_S = sqrt(2*MTOW/(rho*S*CL_max));
 V_C = params.performance.V_C;
 V_max_level = params.performance.V_max_level;
 W_S = MTOW / S; 
@@ -44,12 +52,11 @@ n_gust_VC_capped = min(n_gust_VC_raw, n_stall_VC);
 % Adopted positive limit load factor
 n_pos = n_pos_capped;
 
-if n_gust_VC_capped > n_pos
-    warning(['Stall-capped gust load factor at V_C (%.2f) exceeds the adopted n+ (%.2f).\n' ...
-             '  This is a stated design decision (see lecture discussion Q1), not a formula --\n' ...
-             '  decide and justify which value your team adopts, then set n_pos accordingly.'], ...
-             n_gust_VC_capped, n_pos);
-end
+% Whether to adopt this higher gust value instead of n+ is a stated
+% design decision (see lecture discussion Q1), not something the formula
+% resolves on its own -- flagged in the console summary below rather
+% than via warning() here, so it reads as a finding, not an error.
+gust_exceeds_n_pos = n_gust_VC_capped > n_pos;
 
 n_neg = -0.4*n_pos;      % FAR 23.337(b), using the adopted n+
 n_ult_pos = 1.5*n_pos;   % ultimate = 1.5x limit (slide 6)
@@ -73,10 +80,7 @@ end
 
 % Never-exceed check against A6 (Recheck with A9 Once Available)
 NE_ok_A6 = V_NE > V_max_level;
-fprintf('=== V-n diagram: never-exceed check ===\n');
-if NE_ok_A6
-    fprintf('  V_NE = %.1f m/s exceeds the max level speed from A6 (%.1f m/s) -- OK.\n', V_NE, V_max_level);
-else
+if ~NE_ok_A6
     warning('V_NE (%.1f m/s) does NOT exceed the max level speed from A6 (%.1f m/s) -- V_D must increase.', V_NE, V_max_level);
 end
 
@@ -96,7 +100,7 @@ blue  = [0.00 0.45 0.70];
 orange= [0.90 0.35 0.00];
 teal  = [0.00 0.60 0.50];
 
-figure('Name','V-n Diagram','Color','w','Position',[100 100 900 600],'WindowStyle','docked'); hold on; box on; grid on;
+figure('Name','V-n Diagram','Color','w','WindowStyle','docked'); hold on; box on; grid on;
 
 fill(V_poly, n_poly, blue, 'FaceAlpha', 0.12, 'EdgeColor', 'none', 'HandleVisibility', 'off');
 
@@ -159,23 +163,18 @@ ylabel('load factor n (g)');
 title('V-n Diagram: Maneuver Envelope and Gust Lines');
 legend('Location', 'northwest');
 
-%% ---- Assumptions / equations table ----
-fprintf('\n=== V-n diagram: equations, constants and aircraft-specific values ===\n');
-fprintf('  FAR 23.337(a)  n+ candidates: raw = %.3f, category-capped [2.5,3.8] = %.3f\n', n_pos_raw, n_pos_capped);
-fprintf('  FAR 23.341     n_gust(V_C): raw = %.3f, stall-capped = %.3f\n', n_gust_VC_raw, n_gust_VC_capped);
-fprintf('  ADOPTED n+ = %.3f  <-- stated design decision (lecture discussion Q1), not a pure formula\n', n_pos);
-fprintf('  FAR 23.337(b)  n- = -0.4 n+ (adopted)  ->  n- = %.3f\n', n_neg);
-fprintf('  ultimate = 1.5x limit (slide 6)        ->  n_ult+ = %.3f, n_ult- = %.3f\n', n_ult_pos, n_ult_neg);
-fprintf('  V_A = V_S sqrt(n+) = %.2f m/s   (V_S = %.2f m/s)\n', V_A, V_S);
-fprintf('  V_C (from A2/InitialCalcs)         = %.2f m/s\n', V_C);
-fprintf('  V_D = max(1.25 V_C, 1.25 V_max)    = %.2f m/s   (V_max level, A6 = %.2f m/s)\n', V_D, V_max_level);
-fprintf('  V_NE = 0.9 V_D                     = %.2f m/s\n', V_NE);
-fprintf('  gust: n = 1 + Kg*Ude*V*CLalpha / (2*(W/S)/rho), SI throughout (slide 10)\n');
-fprintf('    mu_g = 2(W/S)/(rho*c_bar*g*CLalpha) = %.3f,  K_g = 0.88 mu_g/(5.3+mu_g) = %.3f\n', mu_g, K_g);
-fprintf('    U_de = %.1f m/s at V_C, %.1f m/s at V_D (FAR 23.333, sea level)\n', U_de_VC, U_de_VD);
-fprintf('    operational (site) gust adopted = %.1f m/s, meets n+ at V_NO = %.2f m/s\n', U_op, V_NO);
-fprintf('  Atmospheric/aircraft constants: rho = %.3f kg/m^3, g = %.2f m/s^2, S = %.4f m^2, c_bar = %.3f m\n', rho, g, S, c_bar);
-fprintf('    CL_max = %.3f, CL_max_neg = %.2f (ASSUMPTION), CL_alpha = %.3f /rad, MTOM = %.2f kg\n', CL_max, CL_max_neg, CL_alpha, MTOM);
+%% ---- Console summary: critical values only ----
+fprintf('\n--- V-n Diagram (Deliverable 2) ---\n');
+fprintf('  Load factors:  n+ = %.2f    n- = %.2f    n_ult+ = %.2f    n_ult- = %.2f\n', n_pos, n_neg, n_ult_pos, n_ult_neg);
+fprintf('  Key speeds:    V_A = %.1f m/s   V_C = %.1f m/s   V_D = %.1f m/s   V_NE = %.1f m/s\n', V_A, V_C, V_D, V_NE);
+if NE_ok_A6
+    fprintf('  Never-exceed check: V_NE > V_max,level (%.1f m/s) -- PASS\n', V_max_level);
+else
+    fprintf('  Never-exceed check: V_NE <= V_max,level (%.1f m/s) -- FAIL (see warning above)\n', V_max_level);
+end
+if gust_exceeds_n_pos
+    fprintf('  >>> FINDING: stall-capped gust load factor at V_C (%.2f) exceeds the adopted n+ (%.2f) -- team decision needed (discussion Q1).\n', n_gust_VC_capped, n_pos);
+end
 
 %% Outputs; Carry the governing load factors and speeds forward for the rest of A8
 outputs.VnDiagram = struct('n_pos_raw', n_pos_raw, 'n_pos_capped', n_pos_capped, 'n_pos', n_pos, ...

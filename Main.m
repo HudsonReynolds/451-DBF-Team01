@@ -28,6 +28,10 @@ ServoSizing(params);
 
 params = PropulsionSizing(params);
 
+fprintf('\n========================================\n');
+fprintf('  STRUCTURES (A8, Deliverables 2-4)\n');
+fprintf('========================================\n');
+
 [~, params] = VnDiagram(params);
 
 VnOperatingEnvelope(params);
@@ -38,5 +42,5 @@ VnOperatingEnvelope(params);
 
 [~, params] = FuselageLoads(params);
 
-[~, params] = TakeOffRotation(params);
+[~, params] = TailDraggerTakeOff(params);
 

@@ -4,15 +4,15 @@ IN2M = .0254;
 MS2MPH = 2.23694;
 
 %% Initial Sizing
-L_TO = 0.5 * params.env.rho * (0.7*params.performance.V_TO)^2 * params.geometry.S_wing * params.aero.CL_R % Lift at takeoff [N]
-D_TO = 0.5 * params.env.rho * (0.7*params.performance.V_TO)^2 * params.geometry.S_wing * (params.aero.CD_0 + params.aero.K_wing*params.aero.CL_R^2) % Drag at takeoff [N]
-T_static = (params.performance.MTOW * params.performance.V_TO^2) / (2 * params.env.g * params.performance.S_TO) + D_TO + params.env.mu_TO*(params.performance.MTOW - L_TO) % Static thrust [N]
-T_C = 0.5 * params.env.rho * params.performance.V_C^2 * params.geometry.S_wing * (params.aero.CD_0 + params.aero.K_wing*params.aero.CL_C^2) % Cruise thrust [N]
+L_TO = 0.5 * params.env.rho * (0.7*params.performance.V_TO)^2 * params.geometry.S_wing * params.aero.CL_R; % Lift at takeoff [N]
+D_TO = 0.5 * params.env.rho * (0.7*params.performance.V_TO)^2 * params.geometry.S_wing * (params.aero.CD_0 + params.aero.K_wing*params.aero.CL_R^2); % Drag at takeoff [N]
+T_static = (params.performance.MTOW * params.performance.V_TO^2) / (2 * params.env.g * params.performance.S_TO) + D_TO + params.env.mu_TO*(params.performance.MTOW - L_TO); % Static thrust [N]
+T_C = 0.5 * params.env.rho * params.performance.V_C^2 * params.geometry.S_wing * (params.aero.CD_0 + params.aero.K_wing*params.aero.CL_C^2); % Cruise thrust [N]
 
 P_shaft_total = params.performance.MTOW / params.performance.W_P_design; % Total shaft power [W]
 P_shaft = P_shaft_total / params.prop.n_motors; % Shaft power per motor [W]
-P_motor = P_shaft / params.prop.eta_m % Motor power per motor [W]
-P_battery = P_motor / params.prop.eta_ESC % Battery power per motor [W]
+P_motor = P_shaft / params.prop.eta_m; % Motor power per motor [W]
+P_battery = P_motor / params.prop.eta_ESC; % Battery power per motor [W]
 
 %% System specs
 Kt = 60 / (2*pi*params.prop.Kv); % [N-m/A]
@@ -35,11 +35,11 @@ RPM_high = min(RPM_noload, 25000); % Max of RPM range for solver [RPM]
 Qres = @(RPM) max(Kt*((params.prop.V_batt - Kt*(2*pi/60)*RPM)/params.prop.R_motor - params.prop.I0), 0) ...            % Q_motor
              - prop.query(RPM,0).Cp * params.env.rho * (RPM/60)^2 * D^5 / (2*pi);  % Q_prop
 
-RPM_eq = fzero(Qres, [1000, RPM_high]) % Equilibrium motor speed [RPM]
+RPM_eq = fzero(Qres, [1000, RPM_high]); % Equilibrium motor speed [RPM]
 
 % Determine motor operating speeds
-RPM_lim = 145000 / (D / IN2M) % Propeller structural speed limit
-RPM_max = min(RPM_eq, RPM_lim) % 100% throttle RPM
+RPM_lim = 145000 / (D / IN2M); % Propeller structural speed limit
+RPM_max = min(RPM_eq, RPM_lim); % 100% throttle RPM
 throttle_settings = [0.25 0.5 0.75 1];
 
 % Get propeller data
@@ -84,7 +84,7 @@ clr = [0.00 0.45 0.74;   % blue   – 25%
 sty = {'-','--','-.',':'};
 lw  = 1.5;
 
-figure('Name','Prop Sizing','Color','w','Position',[100 100 1200 340],'WindowStyle','docked');
+figure('Name','Prop Sizing','Color','w','WindowStyle','docked');
 tiledlayout(1,3,'TileSpacing','compact','Padding','compact');
 
 % Thrust

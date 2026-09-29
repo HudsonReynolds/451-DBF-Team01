@@ -8,7 +8,11 @@ CL_max = params.aero.CL_max;
 CL_max_neg = params.aero.CL_max_neg;
 rho    = params.env.rho;
 
-V_S  = params.performance.V_S;
+% Self-consistent stall speed (same formula as VnDiagram.m and as
+% V_S_neg below) -- keeps the stall boundary flush with the limit-load-
+% factor line for whatever CL_max/MTOW this run actually used, rather
+% than the independently-set Excel input V_S.
+V_S  = sqrt(2*MTOW/(rho*S*CL_max));
 V_C  = params.performance.V_C;
 V_max_level = params.performance.V_max_level;
 V_A  = params.performance.V_A;
@@ -45,7 +49,7 @@ x_right = V_D*1.08;
 y_top = n_ult_pos + 0.8;
 y_bot = n_ult_neg - 0.8;
 
-figure('Name','V-n Envelope: Operating Limits','Color','w','Position',[100 100 950 620],'WindowStyle','docked');
+figure('Name','V-n Envelope: Operating Limits','Color','w','WindowStyle','docked');
 hold on; box on; grid on;
 xlim([0, x_right]);
 ylim([y_bot, y_top]);

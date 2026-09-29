@@ -56,19 +56,19 @@ Weight_y = Weight - params.performance.W_e_frac*Weight;
 % legend('Location','Best');
 
 % use total weight for energies
-totBatteryWeight = BatteryWeightFraction * Weight
-totBatteryEnergy = totBatteryWeight * params.prop.rho_battery
-totEnergyRequiredByPlane = BatteryWeightFractionPlane * Weight * params.prop.rho_battery
-totEnergyRequiredByBatt = totEnergyRequiredByPlane / (params.prop.eta_p_C*params.prop.eta_m)
-energyLost = (1-params.prop.useableCapacity*params.prop.temp_derate)*totEnergyRequiredByBatt
-energyLossPercentage = energyLost/totEnergyRequiredByBatt * 100
+totBatteryWeight = BatteryWeightFraction * Weight;
+totBatteryEnergy = totBatteryWeight * params.prop.rho_battery;
+totEnergyRequiredByPlane = BatteryWeightFractionPlane * Weight * params.prop.rho_battery;
+totEnergyRequiredByBatt = totEnergyRequiredByPlane / (params.prop.eta_p_C*params.prop.eta_m);
+energyLost = (1-params.prop.useableCapacity*params.prop.temp_derate)*totEnergyRequiredByBatt;
+energyLossPercentage = energyLost/totEnergyRequiredByBatt * 100;
 
 % Delivarable 5 shit:
 % pieChart_vals = [params.performance.W_pay,totBatteryWeight,Weight - params.performance.W_pay - totBatteryWeight];
 % figure('Name','Payload, Battery, Vehicle Weight Pie Chart');
 % piechart(pieChart_vals,["Payload Weight","Battery Weight", "Empty Weight"])
 % calculate the energy margin:
-energyMargin = totBatteryEnergy / totEnergyRequiredByPlane
+energyMargin = totBatteryEnergy / totEnergyRequiredByPlane;
 
 params.performance.MTOM = Weight;
 params.performance.MTOW = Weight * params.env.g;

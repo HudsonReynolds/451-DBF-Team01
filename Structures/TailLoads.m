@@ -16,8 +16,6 @@ c    = params.geometry.c_wing;
 massTable = readtable('SizingParams.xlsx', 'Sheet', 'MassBudget');
 MTOM = sum(massTable.Mass_g)/1000; % kg
 MTOW = MTOM * g; % N
-fprintf('  [mass table] MTOM = %.3f kg (source of truth) vs iterated params.performance.MTOM = %.3f kg (%.1f%% difference)\n', ...
-    MTOM, params.performance.MTOM, 100*(MTOM-params.performance.MTOM)/params.performance.MTOM);
 
 n_pos = params.performance.n_limit_pos;
 V_A = params.performance.V_A;
@@ -66,14 +64,6 @@ capped_points   = abs(L_raw_points) > L_stall_points;
 V_h_governing = V_points(i_gov_h);
 L_h_design_signed = L_design_points(i_gov_h);
 
-fprintf('=== Horizontal tail: symmetric case (full elevator, %.0f deg) ===\n', params.geometry.delta_e_limit_deg);
-for i = 1:3
-    fprintf('  at %s = %.1f m/s: balance+elevator = %+.2f N, stall cap = %.2f N -> design = %+.2f N (%s)\n', ...
-        point_labels{i}, V_points(i), L_raw_points(i), L_stall_points(i), L_design_points(i), ...
-        local_ternary(capped_points(i), 'capped by tail stall', 'uncapped, elevator authority governs'));
-end
-fprintf('  >>> GOVERNS: %s = %.1f m/s, design load = %+.2f N\n', point_labels{i_gov_h}, V_h_governing, L_h_design_signed);
-
 % Shrenk approximation on the horizontal tail, same method as the wing:
 y_h = linspace(0, s_h, 300);
 c_ell_h = (4*S_h/(pi*b_h)) * sqrt(max(1 - (2*y_h/b_h).^2, 0));
@@ -88,9 +78,16 @@ e_arm_h = (params.structures.x_spar - x_ac) * c_h;
 t_h = w_h*e_arm_h;
 T_h = local_tipIntegrate(y_h, t_h);
 
-fprintf('  Shrenk normalising factor k_h = %.2f N/m^2 (semispan integral = |L_h|/2 = %.2f N)\n', k_h, abs(L_h_design_signed)/2);
-fprintf('  root: M(0) = %+.3f N*m, T(0) = %+.4f N*m; BCs at tip: M(s)=%.2e N*m, T(s)=%.2e N*m (should be ~0)\n', ...
-    M_h(1), T_h(1), M_h(end), T_h(end));
+tip_residual_h = max(abs([M_h(end), T_h(end)]));
+if tip_residual_h > 1e-6
+    warning('TailLoads:tipBC', 'Horizontal tail free-tip BC not satisfied: |residual| = %.2e (should be ~0).', tip_residual_h);
+end
+
+fprintf('\n--- Tail Loads (Deliverable 3) ---\n');
+fprintf('  Horizontal tail: governs at %s = %.1f m/s, design load = %+.2f N (%s)\n', ...
+    point_labels{i_gov_h}, V_h_governing, L_h_design_signed, ...
+    local_ternary(capped_points(i_gov_h), 'stall-capped', 'elevator auth.'));
+fprintf('    root M(0) = %+.2f N*m, T(0) = %+.3f N*m\n', M_h(1), T_h(1));
 
 % VERTICAL TAIL / FIN
 S_v = params.geometry.S_fin;
@@ -128,17 +125,18 @@ M_l_tc = Yv * (l_tc - x_tc);
 
 %% Console Outputs and Plotting
 
-fprintf('\n=== Vertical tail / fin: asymmetric case (full rudder, %.0f deg, at V_D) ===\n', params.geometry.delta_r_limit);
-fprintf('  evaluated at V_D = %.1f m/s -- the tail''s stated design point (dive speed, slides 9 and 22)\n', V_D);
-fprintf('  Yv: linear = %.2f N, stall cap = %.2f N -> Yv = %.2f N (%s)\n', Yv_linear, Yv_stall, Yv, ...
-    local_ternary(capped_rudder, 'capped by fin stall', 'uncapped, rudder authority governs'));
-fprintf('  fin root bending M(0) = %.3f N*m (closed-form 4 Yv H/(3 pi) = %.3f N*m, cross-check)\n', M_fin(1), M_fin_closed_form);
-fprintf('  z_cp = D_fus/2 + 4H/(3 pi) = %.4f m; torsion into the tailcone T = Yv*z_cp = %.3f N*m (constant along the tailcone)\n', z_cp, T_tailcone);
-fprintf('  lateral bending into the tailcone: M_l(root)=%.3f N*m at the fuselage, decreasing to 0 at the fin end (l_tc ~ l_t = %.3f m, APPROXIMATION)\n', M_l_tailcone, l_tc);
+fin_residual = abs(M_fin(1) - M_fin_closed_form);
+if fin_residual > 1e-3*abs(M_fin_closed_form)
+    warning('TailLoads:finCrossCheck', 'Fin root bending disagrees with the closed-form check: %.3f vs %.3f N*m.', M_fin(1), M_fin_closed_form);
+end
+
+fprintf('  Vertical tail / fin: governs at V_D = %.1f m/s, Yv = %.1f N (%s)\n', ...
+    V_D, Yv, local_ternary(capped_rudder, 'stall-capped', 'rudder auth.'));
+fprintf('    root M(0) = %.2f N*m; tailcone T = %.2f N*m, M_l(root) = %.2f N*m\n', M_fin(1), T_tailcone, M_l_tailcone);
 
 % Horizontal tail (symmetric)
 
-figure('Name','Tail Loads - Horizontal Tail (Symmetric)','Color','w','Position',[100 100 1150 550],'WindowStyle','docked');
+figure('Name','Tail Loads - Horizontal Tail (Symmetric)','Color','w','WindowStyle','docked');
 tiledlayout(1,2,'TileSpacing','loose','Padding','compact');
 
 nexttile; hold on; box on; grid on;
@@ -153,7 +151,7 @@ for i = 1:3
     text(V_points(i), row_y_h(mod(i-1,2)+1), sprintf('$%s=%.1f$', point_labels{i}, V_points(i)), ...
         'HorizontalAlignment', 'center', 'Color', [0.35 0.35 0.35], 'FontSize', 9, 'Interpreter', 'latex');
 end
-xlabel('equivalent airspeed V (m/s)'); ylabel('horizontal tail load |L_h| (N)');
+xlabel('equivalent airspeed V (m/s)'); ylabel('horizontal tail load $|L_h|$ (N)', 'Interpreter', 'latex');
 title(sprintf('Horizontal tail load: %.1f N at $%s$ (%s)', L_h_design, point_labels{i_gov_h}, ...
     local_ternary(capped_points(i_gov_h),'stall-capped','elevator auth.')), 'Interpreter', 'latex');
 legend('Location', 'best', 'Interpreter', 'latex');
@@ -176,7 +174,7 @@ sgtitle(sprintf('Symmetric case: full elevator, design point at $%s$; ultimate 1
     'Interpreter', 'latex', 'FontWeight', 'bold');
 
 % Vertical tail / fin (asymmetric)
-figure('Name','Tail Loads - Vertical Tail (Asymmetric Rudder)','Color','w','Position',[1200 100 1150 650],'WindowStyle','docked');
+figure('Name','Tail Loads - Vertical Tail (Asymmetric Rudder)','Color','w','WindowStyle','docked');
 tiledlayout(2,2,'TileSpacing','loose','Padding','compact');
 
 nexttile; hold on; box on; grid on;
@@ -186,7 +184,7 @@ plot(V_D, Yv, 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize',
 xline(V_D, ':', 'Color', [0.4 0.4 0.4], 'HandleVisibility', 'off');
 yl = ylim; text(V_D, yl(1)+0.03*(yl(2)-yl(1)), sprintf('$V_D=%.1f$', V_D), ...
     'HorizontalAlignment', 'center', 'Color', [0.35 0.35 0.35], 'FontSize', 9, 'Interpreter', 'latex');
-xlabel('equivalent airspeed V (m/s)'); ylabel('fin side force Y_v (N)');
+xlabel('equivalent airspeed V (m/s)'); ylabel('fin side force $Y_v$ (N)', 'Interpreter', 'latex');
 title(sprintf('Fin side load: %.1f N at $V_D$ (%s)', Yv, local_ternary(capped_rudder,'stall-capped','rudder auth.')), 'Interpreter', 'latex');
 legend('Location', 'best', 'Interpreter', 'latex');
 
@@ -211,13 +209,6 @@ ylim([0, max(M_l_tc)*1.1]);
 xlabel('station along the tailcone, from the fuselage root (m)'); ylabel('N$\cdot$m', 'Interpreter', 'latex');
 title(sprintf('Tailcone: T = %.2f N*m (constant), $M_l$(root) = %.2f N*m', T_tailcone, M_l_tailcone), 'Interpreter', 'latex');
 legend('Location', 'best', 'Interpreter', 'latex');
-
-nexttile; axis off;
-text(0, 0.9, 'Assumptions carried into this figure:', 'FontWeight', 'bold', 'FontSize', 10);
-text(0, 0.7, sprintf('eta_h = eta_v = %.1f  (tail efficiency, not modelled elsewhere)', eta_h), 'FontSize', 9);
-text(0, 0.55, sprintf('CL_{max,tail} = %.2f  (NACA 0010, ASSUMPTION)', CL_max_tail), 'FontSize', 9);
-text(0, 0.4, sprintf('D_{fus,tail} = %.3f m  (tailboom diameter at the fin, ASSUMPTION)', D_fus), 'FontSize', 9);
-text(0, 0.25, sprintf('l_{tc} ~ l_t = %.3f m  (tailcone arm approximated by the wing-to-tail arm)', l_tc), 'FontSize', 9);
 
 sgtitle('Asymmetric case: full rudder, design point at $V_D$; ultimate 1.5$\times$', ...
     'Interpreter', 'latex', 'FontWeight', 'bold');

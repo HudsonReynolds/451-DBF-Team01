@@ -43,12 +43,15 @@ xline(params.aero.CL_max, '-.', 'C_{L,max}', 'Color',[0 0.6 0.3], 'LineWidth',1.
 [worst_deg, worst_idx] = max(abs(delta_e_at_max_all));
 elevator_margin = delta_e_limit - worst_deg;
 plot(params.aero.CL_max, delta_e_at_max_all(worst_idx), 'ko', 'MarkerFaceColor','k', 'MarkerSize',6, 'HandleVisibility','off')
+% Two-line label as a cell array (one string per line), not an embedded
+% "\n" -- the LaTeX interpreter does not treat a literal newline inside
+% one string as a line break, and warns.
 text(params.aero.CL_max - 0.05, delta_e_at_max_all(worst_idx), ...
-    sprintf('%s at C_{L,max}:\n%.0f of %d deg used, %.0f deg left', CG_labels{worst_idx}, worst_deg, delta_e_limit, elevator_margin), ...
+    {sprintf('%s at $C_{L,max}$:', CG_labels{worst_idx}), sprintf('%.0f of %d deg used, %.0f deg left', worst_deg, delta_e_limit, elevator_margin)}, ...
     'HorizontalAlignment','right','VerticalAlignment','top')
 
-xlabel('Trim Lift Coefficient, C_L (-)')
-ylabel('Elevator Deflection to Trim, \delta_e (deg)')
+xlabel('Trim Lift Coefficient, $C_L$ (-)')
+ylabel('Elevator Deflection to Trim, $\delta_e$ (deg)')
 title('Trim Envelope -- Elevator Required against Lift Coefficient')
 legend('Location','best')
 ylim([-1.5*delta_e_limit, 1.5*delta_e_limit])
@@ -57,7 +60,10 @@ grid on
 fprintf('--- Elevator ---\n');
 fprintf('  Worst-case delta_e at CL_max = %.2f deg (limit +-%.0f deg, margin = %.2f deg)\n', worst_deg, delta_e_limit, elevator_margin);
 if elevator_margin < 1
-    warning('Elevator authority has under 1 deg of margin at the flare condition -- treat as a finding, not a pass.');
+    % A finding for the team to weigh in on, not a code error -- printed
+    % inline rather than via warning() so it doesn't interrupt with a
+    % stack trace every run.
+    fprintf('  >>> FINDING: under 1 deg of elevator margin at the flare condition -- treat as a finding, not a pass.\n');
 end
 
 
@@ -93,7 +99,7 @@ fprintf('Span %.0f%%-%.0f%% semispan, chord fraction %.2f:\n', params.geometry.y
 fprintf('  roll rate achieved = %.1f deg/s (target %.0f deg/s) at %.1f m/s, margin = %.1f deg/s\n', ...
     p_roll_dps, params.aero.roll_rate_target_dps, V_roll, roll_margin_dps);
 if abs(roll_margin_dps) < 2
-    warning('Roll rate sits right on the target -- treat as a finding, not a pass.');
+    fprintf('  >>> FINDING: roll rate sits right on the target -- treat as a finding, not a pass.\n');
 end
 
 %% ---- Rudder: crosswind authority ----
