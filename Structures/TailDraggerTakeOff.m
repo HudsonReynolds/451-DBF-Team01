@@ -214,7 +214,8 @@ nexttile; hold on; box on; grid on;
 % points, not axle heights.
 slope3pt = (ground_clearance_tail - ground_clearance_main) / (x_tailwheel - x_main_gear);
 underside_at = @(x) ground_clearance_main + slope3pt*(x - x_main_gear);
-x_nose_plot = -0.05;
+prop_x_offset = R_prop*sin(deg2rad(theta3_deg)); % how far the tilted propeller (below) reaches ahead of x=0
+x_nose_plot = min(-0.05, -prop_x_offset - 0.02);
 x_aft_plot  = x_tailwheel*1.08;
 plot([x_nose_plot, x_aft_plot], [0 0], 'k-', 'LineWidth', 1.2, 'HandleVisibility', 'off');
 plot([x_nose_plot, x_aft_plot], underside_at([x_nose_plot, x_aft_plot]), '-', 'Color', [0.55 0.55 0.55], 'LineWidth', 1.3, 'DisplayName', 'fuselage underside, 3-pt attitude');
@@ -226,8 +227,25 @@ plot(x_tailwheel + tail_wheel_r*cos(th), tail_wheel_r + tail_wheel_r*sin(th), '-
 z_cg_3pt = underside_at(x_cg_abs) + z_cg_abs;
 plot(x_cg_abs, z_cg_3pt, 'o', 'MarkerSize', 9, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'w', 'LineWidth', 1.5, 'DisplayName', 'CG');
 plot([x_cg_abs, x_main_gear], [z_cg_3pt, 0], ':', 'Color', red, 'LineWidth', 1.4, 'DisplayName', sprintf('tip-forward, %.1f deg', alpha_tf_deg));
+% Propeller, to scale like the wheels above: seen from this side view the
+% disc is edge-on, so it draws as a line spanning its full diameter
+% (D_prop, R_prop already computed below in the propeller-clearance
+% section), centred on the thrust line -- NOT drawn plumb-vertical, since
+% the disc is mounted perpendicular to the thrust line/fuselage reference
+% line, which is itself tilted by theta3 (nose-up) in this attitude. The
+% fuselage line's direction is (cos(theta3), -sin(theta3)) (it descends
+% going aft, per underside_at's slope), so the perpendicular -- the
+% propeller's own line -- is (sin(theta3), cos(theta3)): at theta3=0 this
+% reduces to plumb-vertical, as expected.
+theta3_rad = deg2rad(theta3_deg);
+prop_dir = [sin(theta3_rad), cos(theta3_rad)];
 z_motor_3pt = underside_at(0) + massTable.Z_m(motor_mask);
-plot(0, z_motor_3pt, 'p', 'MarkerSize', 10, 'MarkerFaceColor', orange, 'MarkerEdgeColor', 'k', 'DisplayName', 'propeller (3-pt attitude)');
+prop_hub = [0, z_motor_3pt];
+prop_tip1 = prop_hub + R_prop*prop_dir;
+prop_tip2 = prop_hub - R_prop*prop_dir;
+plot([prop_tip2(1) prop_tip1(1)], [prop_tip2(2) prop_tip1(2)], '-', 'Color', orange, 'LineWidth', 2.5, ...
+    'DisplayName', sprintf('propeller, %.0f in dia. (3-pt attitude)', D_prop/IN2M));
+plot(prop_hub(1), prop_hub(2), 'o', 'MarkerSize', 4, 'MarkerFaceColor', orange, 'MarkerEdgeColor', 'k', 'HandleVisibility', 'off');
 text(x_main_gear, -0.03, sprintf('main, x=%.2f m', x_main_gear), 'FontSize', 8, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'top');
 text(x_tailwheel, -0.03, sprintf('tail wheel, x=%.2f m', x_tailwheel), 'FontSize', 8, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'top');
 text(mean([x_main_gear x_tailwheel]), 0.5*(ground_clearance_main+ground_clearance_tail)*0.5, sprintf('$\\theta_3$=%.1f deg', theta3_deg), ...
@@ -236,7 +254,7 @@ xlabel('station from the nose, x (m)'); ylabel('height above ground (m)');
 title('Three-point attitude and tip-forward angle (lecture 08B p.11-12 style)');
 legend('Location', 'best', 'FontSize', 7);
 xlim([x_nose_plot, x_aft_plot]);
-ylim([-0.05, max(z_cg_3pt, ground_clearance_main)*1.6]);
+ylim([-0.05, max([z_cg_3pt, ground_clearance_main, z_motor_3pt + R_prop])*1.6]);
 
 % Panel 2: criteria summary, matching lecture 08B p.27's table.
 nexttile; axis off;

@@ -22,7 +22,15 @@ while err > 0.001
     MTOM_guess = MTOM_new;
 end
 
+fprintf('\n========================================\n');
+fprintf('  Stability (A5B)\n');
+fprintf('========================================\n\n');
+
 params = A5B(params);
+
+fprintf('\n========================================\n');
+fprintf('  Servo Sizing\n');
+fprintf('========================================\n\n');
 
 ServoSizing(params);
 
