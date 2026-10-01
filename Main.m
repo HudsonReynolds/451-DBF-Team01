@@ -52,3 +52,6 @@ VnOperatingEnvelope(params);
 
 [~, params] = TailDraggerTakeOff(params);
 
+% Save every figure generated above into Plots/, replacing whatever was
+% there before -- so Plots/ always matches exactly this run's figures.
+ExportAllFigures('Plots');
