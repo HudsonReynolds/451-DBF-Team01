@@ -72,4 +72,14 @@ energyMargin = totBatteryEnergy / totEnergyRequiredByPlane;
 
 params.performance.MTOM = Weight;
 params.performance.MTOW = Weight * params.env.g;
+
+% Exposed for A9 (endurance/range/mission-energy deliverables need the
+% actual battery energy budget, not just MTOM): totBatteryEnergy is the
+% full pack's energy; usableBatteryEnergy is what's actually available
+% to spend in flight once the useableCapacity and temp_derate margins
+% already folded into BatteryWeightFraction above are backed out -- by
+% construction this equals totEnergyRequiredByPlane exactly.
+params.performance.totBatteryMass_kg = totBatteryWeight;
+params.performance.totBatteryEnergy_J = totBatteryEnergy;
+params.performance.usableBatteryEnergy_J = totEnergyRequiredByPlane;
 end

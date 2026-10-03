@@ -52,6 +52,20 @@ VnOperatingEnvelope(params);
 
 [~, params] = TailDraggerTakeOff(params);
 
+fprintf('\n========================================\n');
+fprintf('  AIRCRAFT PERFORMANCE (A9, Deliverables 1-5)\n');
+fprintf('========================================\n');
+
+[~, params] = PropulsionDragModel(params);
+
+[~, params] = TakeoffPerformance(params);
+
+[~, params] = ClimbPerformance(params);
+
+[~, params] = CruisePerformance(params);
+
+[~, params] = TurnPerformance(params);
+
 % Save every figure generated above into Plots/, replacing whatever was
 % there before -- so Plots/ always matches exactly this run's figures.
-ExportAllFigures('Plots');
+%ExportAllFigures('Plots');

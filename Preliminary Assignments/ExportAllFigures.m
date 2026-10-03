@@ -18,15 +18,33 @@ function ExportAllFigures(outDir)
     end
 
     figs = findall(groot, 'Type', 'figure');
+    saved = 0;
     for i = 1:numel(figs)
         f = figs(i);
-        name = get(f, 'Name');
+        if ~isvalid(f)
+            % Can happen when running interactively rather than in
+            % batch: a figure window got closed (by hand, or by another
+            % script) after findall collected its handle but before this
+            % loop reached it. Skip it rather than letting one closed
+            % window crash the export of everything else.
+            continue
+        end
+        try
+            name = get(f, 'Name');
+        catch
+            continue % closed between the isvalid check above and this call
+        end
         if isempty(name)
             name = sprintf('Figure_%d', f.Number);
         end
         safeName = regexprep(name, '[^a-zA-Z0-9]+', '_');
-        exportgraphics(f, fullfile(outDir, [safeName '.png']), 'Resolution', 200);
+        try
+            exportgraphics(f, fullfile(outDir, [safeName '.png']), 'Resolution', 200);
+            saved = saved + 1;
+        catch ME
+            warning('ExportAllFigures:skipped', 'Could not export figure "%s": %s', name, ME.message);
+        end
     end
 
-    fprintf('\nSaved %d figure(s) to ''%s''.\n', numel(figs), outDir);
+    fprintf('\nSaved %d of %d figure(s) to ''%s''.\n', saved, numel(figs), outDir);
 end
