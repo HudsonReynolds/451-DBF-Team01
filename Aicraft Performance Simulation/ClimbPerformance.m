@@ -18,7 +18,15 @@ rho = params.env.rho;
 S = params.geometry.S_wing;
 MTOW = params.performance.MTOW;
 
-V_S = params.performance.V_S;
+% Self-consistent stall speed for THIS script's own CL_max/MTOW/S/rho
+% (same fix already applied to VnDiagram.m/VnOperatingEnvelope.m) --
+% the raw Excel params.performance.V_S is an independently-set value and
+% is not guaranteed to satisfy CL_max = MTOW/(0.5*rho*V_S^2*S) exactly.
+% Starting the sweep there instead of here left a short stretch just
+% above the nominal V_S where CL = MTOW/(q*S) still computed above
+% CL_max and got clipped flat, before the real (lower) self-consistent
+% stall speed's curve took over -- a flat start with no physical meaning.
+V_S = sqrt(2*MTOW/(rho*S*params.aero.CL_max));
 V_sweep = linspace(V_S, model.V_grid(end), 300);
 
 q = 0.5*rho*V_sweep.^2;

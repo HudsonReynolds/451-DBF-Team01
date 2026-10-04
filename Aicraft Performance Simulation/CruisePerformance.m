@@ -18,7 +18,11 @@ model = params.prop.model;
 rho = params.env.rho;
 S = params.geometry.S_wing;
 MTOW = params.performance.MTOW;
-V_S = params.performance.V_S;
+% Self-consistent stall speed (same fix as ClimbPerformance.m and
+% VnDiagram.m/VnOperatingEnvelope.m) -- avoids a short flat-CL-clipped
+% stretch at the start of the sweep from the raw Excel V_S not quite
+% matching CL_max/MTOW/S/rho here.
+V_S = sqrt(2*MTOW/(rho*S*params.aero.CL_max));
 
 V_sweep = linspace(V_S, model.V_grid(end), 300);
 q = 0.5*rho*V_sweep.^2;
@@ -106,28 +110,29 @@ legend('Location', 'best');
 % sit flush with the left axis and be invisible behind it.
 xlim([V_S - 0.03*(V_sweep(end)-V_S), V_sweep(end)]);
 
-%% ---- Plot 2: power required (+ available, + efficiency), matching the A9 example ----
+%% ---- Plot 2: power required + efficiency, matching the A9 example exactly ----
+% The A9 example for this figure is only three curves (airframe power,
+% electrical power, efficiency) plus a VERTICAL line marking each one's
+% minimum -- it does not plot power available at all (that's a separate
+% bullet, Plot 3 below). An earlier version of this put "electrical
+% power available" on this same axes; it doesn't belong here and was the
+% unfamiliar top-right curve.
 figure('Name','Power Required','Color','w','WindowStyle','docked');
 hold on; box on; grid on;
 yyaxis left
 plot(V_sweep, P_req_aero, '-', 'Color', [0.00 0.60 0.50], 'LineWidth', 1.8, 'DisplayName', 'Power required at the airframe');
 plot(V_sweep, P_req_elec, '--', 'Color', blue, 'LineWidth', 1.8, 'DisplayName', 'Electrical power drawn from the battery');
-plot(V_sweep, P_avail_elec, ':', 'Color', [0.4 0.4 0.4], 'LineWidth', 1.3, 'DisplayName', 'Electrical power available');
 ylabel('Power (W)');
 ax = gca; ax.YColor = 'k';
-xline(V_S, ':', 'Color', [0.3 0.3 0.3], 'HandleVisibility', 'off');
+xline(V_endurance_aero, ':', 'Color', [0.00 0.60 0.50], 'LineWidth', 1.2, 'DisplayName', 'Aerodynamic minimum');
+xline(V_endurance_elec, ':', 'Color', blue, 'LineWidth', 1.2, 'DisplayName', 'Electrical minimum');
 plot(V_endurance_aero, P_req_aero(i_end_aero), 'o', 'MarkerFaceColor', [0.00 0.60 0.50], 'MarkerEdgeColor', 'k', 'MarkerSize', 7, 'HandleVisibility', 'off');
 plot(V_endurance_elec, P_req_elec(i_end_elec), 'o', 'MarkerFaceColor', blue, 'MarkerEdgeColor', 'k', 'MarkerSize', 7, 'HandleVisibility', 'off');
-if abs(V_endurance_aero - V_endurance_elec) < 0.5
-    % Same speed for both (common when it lands right at stall speed,
-    % the edge of the sweep) -- one shared label instead of two
-    % overlapping ones.
-    text(V_endurance_aero, max(P_req_aero(i_end_aero), P_req_elec(i_end_elec)), sprintf('  %.1f m/s (both)', V_endurance_aero), ...
-        'FontSize', 8.5, 'VerticalAlignment', 'bottom');
-else
-    text(V_endurance_aero, P_req_aero(i_end_aero), sprintf('  %.1f m/s', V_endurance_aero), 'FontSize', 8.5, 'VerticalAlignment', 'top');
-    text(V_endurance_elec, P_req_elec(i_end_elec), sprintf('  %.1f m/s', V_endurance_elec), 'FontSize', 8.5, 'VerticalAlignment', 'bottom');
-end
+% Anchored to each marker's own data point (not both to the axis bottom)
+% -- the two minimum speeds are only ~1.5 m/s apart, so pinning both
+% labels to the x-axis put them right on top of each other.
+text(V_endurance_aero, P_req_aero(i_end_aero), sprintf('  %.1f m/s', V_endurance_aero), 'FontSize', 8.5, 'Color', [0.00 0.60 0.50], 'VerticalAlignment', 'top', 'HorizontalAlignment', 'left');
+text(V_endurance_elec, P_req_elec(i_end_elec), sprintf('  %.1f m/s', V_endurance_elec), 'FontSize', 8.5, 'Color', blue, 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'left');
 
 yyaxis right
 plot(V_sweep, eta_combined, '-.', 'Color', orange, 'LineWidth', 1.4, 'DisplayName', 'Combined propulsive efficiency (right axis)');
@@ -138,9 +143,26 @@ ylim([0 1]);
 xlabel('True airspeed (m/s)');
 title('Power required against airspeed');
 legend('Location', 'best');
-% Same reason as the thrust plot above: give the stall-speed line (and
-% the endurance-point labels, which also sit right at V_S) room on the left.
 xlim([V_S - 0.03*(V_sweep(end)-V_S), V_sweep(end)]);
+
+%% ---- Plot 3: electrical power available and required (A9's separate bullet) ----
+% Commented out for now -- team is revisiting whether this figure is
+% needed on top of the Power Required plot above. Re-enable by
+% uncommenting if it's decided to keep it.
+% figure('Name','Electrical Power Available and Required','Color','w','WindowStyle','docked');
+% hold on; box on; grid on;
+% plot(V_sweep, P_avail_elec, '-', 'Color', orange, 'LineWidth', 1.8, 'DisplayName', 'Electrical power available, full throttle');
+% plot(V_sweep, P_req_elec, '--', 'Color', blue, 'LineWidth', 1.8, 'DisplayName', 'Electrical power required, level flight');
+% xline(V_S, ':', 'Color', [0.3 0.3 0.3], 'DisplayName', 'Stall speed');
+% if ~isnan(V_max_level)
+%     plot(V_max_level, interp1(V_sweep, P_req_elec, V_max_level), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
+%     text(V_max_level, interp1(V_sweep, P_req_elec, V_max_level), sprintf('  maximum level speed %.1f m/s', V_max_level), ...
+%         'FontSize', 9, 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'left');
+% end
+% xlabel('True airspeed (m/s)'); ylabel('Electrical power (W)');
+% title('Electrical power available and required');
+% legend('Location', 'best');
+% xlim([V_S - 0.03*(V_sweep(end)-V_S), V_sweep(end)]);
 
 %% ---- Outputs ----
 outputs.CruisePerformance = struct('V', V_sweep, 'T_avail', T_avail, 'T_req', T_req, 'V_max_level', V_max_level, ...

@@ -37,7 +37,21 @@ V_TO  = params.performance.V_TO; % rotation/lift-off speed, mult_V_TO * V_S
 t = 0; V = 0; x = 0;
 t_hist = t; V_hist = V; x_hist = x;
 
-max_steps = 20000; % 200 s of roll at dt=0.01 -- generous safety cap, not expected to bind
+% The ground roll itself ends at lift-off (V >= V_TO) -- that's still what
+% gets reported and checked against the RFP limit below. But the plot
+% keeps integrating past that point, up to a fixed 12 s window, purely so
+% the curves have room to visually separate from the lift-off marker
+% instead of both ending flush at it. Once airborne the wheels are no
+% longer on the runway, so the rolling-resistance term is dropped from
+% that point on -- this post-lift-off segment is a simplified constant-CL
+% extrapolation of the same thrust/drag model, NOT a real climb-out
+% trajectory (no climb angle, no ClimbPerformance.m physics); it exists
+% for plot continuity only.
+T_PLOT_END = 12.0; % s
+liftoff_found = false;
+t_LO = NaN; V_LO = NaN; x_LO = NaN;
+
+max_steps = round(T_PLOT_END/dt) + 1;
 for k = 1:max_steps
     q = 0.5*rho*V^2;
     D = q*S*model.CD_trim_fn(CL_TO);
@@ -47,7 +61,12 @@ for k = 1:max_steps
         error('TakeoffPerformance:noThrust', 'No valid thrust-available point at V=%.2f m/s -- outside the propulsion model''s range.', V);
     end
 
-    a = (T - D - mu_roll*(MTOW - L)) / MTOM;
+    if liftoff_found
+        friction = 0; % wheels off the ground -- no more rolling resistance
+    else
+        friction = mu_roll*(MTOW - L);
+    end
+    a = (T - D - friction) / MTOM;
     if a <= 0
         warning('TakeoffPerformance:noAccel', 'Net acceleration reached zero at V=%.2f m/s, before V_TO=%.2f m/s -- aircraft cannot complete the roll as modelled.', V, V_TO);
         break
@@ -61,23 +80,27 @@ for k = 1:max_steps
     V_hist(end+1) = V; %#ok<AGROW>
     x_hist(end+1) = x; %#ok<AGROW>
 
-    if V >= V_TO
+    if ~liftoff_found && V >= V_TO
+        liftoff_found = true;
+        t_LO = t; V_LO = V; x_LO = x; % record the real lift-off instant, then keep going for the plot
+    end
+
+    if t >= T_PLOT_END
         break
     end
 end
-
-V_LO = V_hist(end);
-x_LO = x_hist(end);
-t_LO = t_hist(end);
 
 S_TO_limit = params.performance.S_TO;
 ok_S_TO = x_LO <= S_TO_limit;
 
 fprintf('\n--- Take-off Performance (Deliverable 2) ---\n');
-fprintf('  Integrated with dt = %.3f s, rolling-resistance coefficient = %.2f (A9-stated, not env.mu_TO=%.2f)\n', dt, mu_roll, params.env.mu_TO);
-fprintf('  Lift-off CL = %.3f (CL_TO, no flaps)\n', CL_TO);
-fprintf('  Lift-off: t = %.2f s, distance = %.2f m, V_LO = %.2f m/s\n', t_LO, x_LO, V_LO);
-fprintf('  >>> Ground roll %.2f m vs RFP limit %.1f m -- %s\n', x_LO, S_TO_limit, local_ternary(ok_S_TO, 'PASS', 'FAIL'));
+fprintf('  Time step:          dt = %.3f s\n', dt);
+fprintf('  Rolling friction:   mu = %.2f  (A9-stated, not env.mu_TO = %.2f)\n', mu_roll, params.env.mu_TO);
+fprintf('  Lift-off CL:        CL_TO = %.3f  (no flaps)\n', CL_TO);
+fprintf('  Lift-off time:      t_LO = %.2f s\n', t_LO);
+fprintf('  Lift-off distance:  x_LO = %.2f m\n', x_LO);
+fprintf('  Lift-off speed:     V_LO = %.2f m/s\n', V_LO);
+fprintf('  Ground roll vs RFP limit (%.1f m): %s\n', S_TO_limit, local_ternary(ok_S_TO, 'PASS', 'FAIL'));
 
 %% ---- Plot: velocity and distance vs time, matching the A9 example ----
 blue = [0.00 0.45 0.74]; orange = [0.85 0.33 0.10];
@@ -108,6 +131,15 @@ text(t_LO, V_LO*0.55, {'  lift-off', sprintf('  %.1f s, %.1f m', t_LO, x_LO), sp
 xlabel('Time (s)');
 title('Take-off ground roll');
 legend('Location', 'northwest');
+% Plotting out to T_PLOT_END puts lift-off at roughly t_LO/12 of the way
+% across the window instead of right at the data's edge, so the marker
+% naturally lands away from the corner -- no y-axis override needed to
+% separate it from the curves' endpoints. The x-axis DOES need pinning,
+% though: MATLAB's default autoscaling rounds the 12.0 s data extent up
+% to a "nice" 14 s, leaving 2 s of dead space after the last sample --
+% the curves then look like they're abruptly chopped off mid-chart
+% instead of simply running to the edge of the plotted window.
+xlim([0, t_hist(end)]);
 
 %% ---- Outputs ----
 outputs.TakeoffPerformance = struct('t', t_hist, 'V', V_hist, 'x', x_hist, ...
