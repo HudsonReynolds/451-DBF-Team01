@@ -2,10 +2,31 @@ function [outputs, params] = MaxPayloadSweep(params)
 
 %% A9 Deliverable 8 -- Maximum Payload
 %
-% Per A9's own instructions: sweep payload mass at 10+ values up to the
-% RFP maximum take-off weight (6 kg, R22), re-running every weight-
-% dependent analysis at each mass (not scaling the nominal result), and
-% track six things against their own limit:
+% A9's own words: "Assume the fuselage has room for the payload and that
+% it is placed so the CG does not move. Keep the airframe, battery, motor
+% and propeller as designed." -- i.e. only the payload mass varies; the
+% rest of the aircraft (wing area, drag polar, CG location, battery
+% capacity, the propulsion model) is FIXED at the baseline design. An
+% earlier version of this script instead re-ran the full weight-
+% convergence loop (InitialCalcs/DragBuildUp/calcAero/
+% VehicleWeightEstimation) at every candidate, which resizes the BATTERY
+% along with payload (VehicleWeightEstimation.m sizes it as a fixed
+% weight fraction) -- directly contradicting "keep the battery as
+% designed," and the reason an earlier run's laps-possible curve rose
+% before falling instead of simply falling (a growing battery was
+% masking the real trend) and why the payload range topped out
+% implausibly low. Fixed: MTOM now grows exactly 1:1 with added payload
+% on top of a FIXED empty+battery mass, and only the weight-DEPENDENT
+% performance scripts (TakeoffPerformance, ClimbPerformance, the turn
+% calculation, MissionSimulation) are re-run per candidate -- not A5B or
+% PropulsionDragModel, since nothing about the airframe/propulsion design
+% itself changes. This is also ~10-20x faster per candidate, so the sweep
+% now runs well past the RFP's MTOW cap for context (per the team's
+% request) instead of stopping exactly at it.
+%
+% Six things are tracked against their own limit (eight individual
+% checks once the turn and peak-draw items are split into their two
+% parts each):
 %   1. Ground roll, against the RFP limit (R1, 25 m).
 %   2. Stall speed, against the landing requirement (SizingParams.xlsx
 %      V_S_landing_limit -- an invented placeholder; see item below).
@@ -19,12 +40,14 @@ function [outputs, params] = MaxPayloadSweep(params)
 %   6. Peak electrical power against the RFP limit (R21, 1000 W) AND peak
 %      current against the motor/controller rating (SizingParams.xlsx
 %      I_motor_limit).
-% That's 8 individual pass/fail checks once the turn and the peak-draw
-% items are split into their two parts each. The maximum payload is
-% whichever one fails at the LOWEST payload; MTOW (6 kg) is only the
-% sweep's own upper bound, not itself one of the 6 listed quantities, so
-% it is not treated as a constraint here, unlike an earlier version of
-% this script.
+% The maximum payload actually reported is the lower of (a) whichever of
+% these eight fails at the lowest payload, and (b) the payload at which
+% MTOW itself reaches the RFP's 6 kg cap (R22) -- MTOW is not one of the
+% six listed quantities, but it is still a hard requirement (R22) that
+% the aircraft cannot legally exceed even if every other quantity still
+% has margin. Both this binding payload AND the MTOW cap payload are
+% marked on every panel (separate vertical lines), and the sweep itself
+% continues past both so each quantity's own natural trend is visible.
 %
 % ASSUMPTION (SizingParams.xlsx, V_S_landing_limit): no numeric landing
 % speed requirement exists anywhere in this project's prior assignments
@@ -32,18 +55,6 @@ function [outputs, params] = MaxPayloadSweep(params)
 % without damage," no speed). Per the team's direction, a placeholder of
 % 13 m/s (roughly 25% above the baseline self-consistent stall speed) was
 % added and clearly flagged for the team to replace with a real number.
-%
-% Re-runs InitialCalcs/DragBuildUp/calcAero/VehicleWeightEstimation (the
-% weight/aero loop), A5B (needed because PropulsionDragModel's trim drag
-% uses x_cg_design, which only A5B sets), PropulsionDragModel,
-% TakeoffPerformance, ClimbPerformance, and MissionSimulation at every
-% candidate payload -- ServoSizing and PropulsionSizing are skipped
-% because nothing in this particular chain reads their outputs. Every
-% candidate's console output is captured via evalc and discarded
-% (warnings silenced for the sweep's duration); the full per-candidate
-% numbers are logged to MaxPayloadSweepLog.xlsx instead. Each candidate's
-% throwaway figures are closed immediately; only this script's own
-% summary figure survives.
 
 if ~isfield(params.performance, 'W_pay')
     error('MaxPayloadSweep:noBaseline', 'params must already contain a baseline W_pay (run the normal Main.m pipeline first).');
@@ -51,34 +62,31 @@ end
 if ~isfield(params.performance, 'V_S_landing_limit')
     error('MaxPayloadSweep:noLandingLimit', 'SizingParams.xlsx needs a V_S_landing_limit entry (performance) -- see this script''s header.');
 end
+if ~isfield(params.prop, 'model')
+    error('MaxPayloadSweep:noModel', 'Run PropulsionDragModel(params) first -- this script reuses that FIXED model for every candidate, it does not re-solve it.');
+end
 
 figs_keep = findall(0, 'Type', 'figure');
 warnState = warning('off', 'all');
-cleanupWarn = onCleanup(@() warning(warnState));
+cleanupWarn = onCleanup(@() warning(warnState)); %#ok<NASGU>
 
-%% ---- Find the sweep's upper bound: payload at MTOM = 6 kg (R22) ----
-MTOW_CAP_KG = 6.0;
-W_pay_hi_search = params.performance.W_pay;
-MTOM_at_hi = local_weightOnly(params, W_pay_hi_search);
-iter_guard = 0;
-while MTOM_at_hi < MTOW_CAP_KG && iter_guard < 30
-    W_pay_hi_search = W_pay_hi_search * 1.5;
-    MTOM_at_hi = local_weightOnly(params, W_pay_hi_search);
-    iter_guard = iter_guard + 1;
-end
-lo_b = 0; hi_b = W_pay_hi_search;
-for b = 1:40
-    mid_b = 0.5*(lo_b+hi_b);
-    if local_weightOnly(params, mid_b) < MTOW_CAP_KG, lo_b = mid_b; else, hi_b = mid_b; end
-end
-W_pay_at_MTOWcap = lo_b;
+%% ---- Fixed aircraft: baseline empty+battery mass, payload grows on top ----
+MTOW_CAP_KG = 6.0; % R22
+W_pay_baseline = params.performance.W_pay;
+MTOM_fixed = params.performance.MTOM - W_pay_baseline; % empty structure + battery, held constant per A9's instruction
+W_pay_at_MTOWcap = MTOW_CAP_KG - MTOM_fixed; % trivial now: MTOM grows 1:1 with payload, no resizing loop needed
 
-N_PTS = 12;
-W_pay_grid = linspace(0.05, W_pay_at_MTOWcap, N_PTS);
+if W_pay_at_MTOWcap <= 0
+    error('MaxPayloadSweep:overweight', 'Baseline empty+battery mass (%.3f kg) already exceeds the 6 kg MTOW cap with zero payload.', MTOM_fixed);
+end
+
+N_PTS = 16;
+W_pay_grid = linspace(0.02, 1.6*W_pay_at_MTOWcap, N_PTS); % swept well past the MTOW cap so each quantity's own trend is visible, per the team's request
 
 fprintf('\n--- Maximum Payload Sweep (Deliverable 8) ---\n');
-fprintf('  Sweeping W_pay from %.3f to %.3f kg over %d points (payload at MTOM = %.1f kg, R22).\n', ...
-    W_pay_grid(1), W_pay_grid(end), N_PTS, MTOW_CAP_KG);
+fprintf('  Fixed empty+battery mass: %.3f kg (baseline MTOM %.3f kg - baseline payload %.3f kg)\n', MTOM_fixed, params.performance.MTOM, W_pay_baseline);
+fprintf('  Payload at MTOW = 6 kg (R22): %.3f kg\n', W_pay_at_MTOWcap);
+fprintf('  Sweeping W_pay from %.3f to %.3f kg over %d points.\n', W_pay_grid(1), W_pay_grid(end), N_PTS);
 
 runLabel = char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm'));
 logRows = cell(0, 16);
@@ -91,7 +99,7 @@ G = struct('MTOM', nan(1,N_PTS), 'S_TO', nan(1,N_PTS), 'V_S', nan(1,N_PTS), ...
     'ok', false(1,N_PTS));
 
 for i = 1:N_PTS
-    r = local_runCandidate(params, W_pay_grid(i), figs_keep);
+    r = local_runCandidate(params, MTOM_fixed, W_pay_grid(i), figs_keep);
     fn = fieldnames(G);
     for kf = 1:numel(fn)-1 % all but 'ok'
         G.(fn{kf})(i) = r.(fn{kf});
@@ -115,7 +123,6 @@ checks = struct( ...
               G.laps_possible, G.P_peak, G.I_peak}, ...
     'limit', {S_TO_LIMIT, V_S_LIMIT, 0, NaN, 0, 3, P_CAP_RFP, I_CAP}, ...
     'sense', {'max', 'max', 'min', 'max', 'max', 'min', 'max', 'max'}); % 'max': fails when value > limit; 'min': fails when value < limit
-checks(4).limit = NaN; % filled per-point below (CL_R varies negligibly but compute properly)
 for i = 1:N_PTS
     checks(4).value(i) = G.CL_turn(i) - G.CL_limit(i); % recast as a margin: fails when > 0
 end
@@ -151,31 +158,31 @@ for c = 1:numel(checks)
     end
 end
 
-[W_pay_max, i_binding] = min(W_pay_cross);
-binding_name = checks(i_binding).name;
-hitMTOWfallback = isinf(W_pay_max);
+[W_pay_max_analyses, i_binding] = min(W_pay_cross);
 
-% Next-binding constraint: the smallest crossing strictly greater than
-% the binding one (not just the second-smallest overall, which could
-% equal the binding value itself under ties, and not just "first finite,"
-% which could re-select the binding one when it is itself finite).
-higherCrossings = W_pay_cross(W_pay_cross > W_pay_max);
-if isempty(higherCrossings)
-    W_pay_next = NaN; i_next = NaN;
+% The payload actually reported can't exceed the MTOW cap either, even if
+% every one of the 6 analyzed quantities still has margin there.
+if W_pay_at_MTOWcap <= W_pay_max_analyses
+    W_pay_max = W_pay_at_MTOWcap;
+    binding_name = 'MTOW cap (R22, 6 kg)';
+    mtowIsBinding = true;
 else
-    W_pay_next = min(higherCrossings);
-    i_next = find(W_pay_cross == W_pay_next, 1);
+    W_pay_max = W_pay_max_analyses;
+    binding_name = checks(i_binding).name;
+    mtowIsBinding = false;
 end
 
-if hitMTOWfallback
-    % None of the 6 analyzed quantities ever fails before the sweep's own
-    % upper bound (payload at MTOM = 6 kg, R22) -- MTOW itself is what
-    % actually stops payload growth here, not any of the 6 listed
-    % analyses, which all still have margin right up to that cap.
-    W_pay_max = W_pay_at_MTOWcap;
-    binding_name = 'MTOW cap (R22, 6 kg) -- none of the 6 analyzed quantities bind first';
-    fprintf('  >>> None of the 6 analyzed quantities (ground roll, stall speed, climb, turn, laps, peak power/current)\n');
-    fprintf('      fails before MTOM reaches 6 kg -- the RFP weight cap itself is the limit here, not any of them.\n');
+% Next-binding constraint: the smallest crossing (among the 6 analyses
+% AND the MTOW cap) strictly greater than whichever is binding now.
+allCrossings = [W_pay_cross, W_pay_at_MTOWcap];
+allNames = [{checks.name}, {'MTOW cap (R22, 6 kg)'}];
+higherCrossings = allCrossings(allCrossings > W_pay_max);
+if isempty(higherCrossings)
+    W_pay_next = NaN; next_name = '';
+else
+    W_pay_next = min(higherCrossings);
+    i_next = find(allCrossings == W_pay_next, 1);
+    next_name = allNames{i_next};
 end
 
 n_cubes = floor(W_pay_max / 0.52); % R14: 520 g per payload cube
@@ -184,154 +191,127 @@ fprintf('  >>> Maximum payload: %.3f kg, set by: %s (%d whole payload cubes, R14
     W_pay_max, binding_name, n_cubes);
 fprintf('  Margins on the other constraints at W_pay = %.3f kg:\n', W_pay_max);
 for c = 1:numel(checks)
-    if ~hitMTOWfallback && c == i_binding, continue, end
+    if ~mtowIsBinding && c == i_binding, continue, end
     fprintf('    %-24s binds at %.3f kg%s\n', checks(c).name, W_pay_cross(c), ...
         local_ternary(isinf(W_pay_cross(c)), ' (never, within the swept range)', ''));
 end
-if ~isnan(i_next)
-    fprintf('  Next-binding constraint if %s is relieved: %s, at %.3f kg\n', binding_name, checks(i_next).name, W_pay_next);
+fprintf('    %-24s binds at %.3f kg\n', 'MTOW cap (R22)', W_pay_at_MTOWcap);
+if ~isnan(W_pay_next)
+    fprintf('  Next-binding constraint if %s is relieved: %s, at %.3f kg\n', binding_name, next_name, W_pay_next);
 else
-    fprintf('  No other constraint binds within the swept range -- raising MTOW itself is the only way to carry more payload.\n');
+    fprintf('  No other constraint binds within the swept range.\n');
 end
 
 %% ---- Plot: all 8 checks against payload, 2x4 panels ----
-blue = [0.00 0.45 0.74]; orange = [0.85 0.33 0.10]; red = [0.80 0.00 0.00]; gray = [0.3 0.3 0.3];
+blue = [0.00 0.45 0.74]; orange = [0.85 0.33 0.10]; red = [0.80 0.00 0.00]; gray = [0.3 0.3 0.3]; purple = [0.49 0.18 0.56];
 
-% The swept range always ends exactly at W_pay_max when nothing else
-% binds first (and often ends very close to it otherwise), so with no
-% margin the vertical "max payload" line sits flush on each panel's right
-% edge, hidden behind the axis spine -- same fix as the earlier takeoff/
-% climb plots this session. Give every panel's x-axis a little headroom.
-xlim_pad = [0, max(W_pay_grid(end), W_pay_max)*1.08];
+xlim_pad = [0, W_pay_grid(end)*1.02];
 
 % No explicit 'Position' here -- Setup.m already sets every figure to
 % dock by default, and combining 'WindowStyle','docked' with an explicit
 % Position pops the figure out as its own separate window instead of
 % joining the rest in the same docked tab group (same conflict fixed
-% elsewhere earlier this session). The 2x4 panel layout below still
-% renders fine at whatever size the docked group happens to be; the user
-% can resize that group interactively like any other docked figure.
+% elsewhere earlier this session).
 figure('Name','Maximum Payload Sweep','Color','w','WindowStyle','docked');
 
-local_panel(1, W_pay_grid, G.S_TO, S_TO_LIMIT, 'max', 'Ground roll (m)', 'Ground roll vs RFP limit', W_pay_max, blue, red, gray, [], xlim_pad);
-local_panel(2, W_pay_grid, G.V_S, V_S_LIMIT, 'max', 'Stall speed (m/s)', 'Stall speed vs landing limit*', W_pay_max, blue, red, gray, [], xlim_pad);
-local_panel(3, W_pay_grid, G.ROC_max, 0, 'min', 'Max rate of climb (m/s)', 'Max ROC vs 0 (climb feasibility)', W_pay_max, blue, red, gray, [], xlim_pad);
-local_panel(4, W_pay_grid, G.CL_turn, NaN, 'max', 'Turn C_L (-)', 'Turn CL vs stall-margined limit', W_pay_max, blue, red, gray, G.CL_limit, xlim_pad);
+local_panel(1, W_pay_grid, G.S_TO, S_TO_LIMIT, 'Ground roll (m)', 'Ground roll vs RFP limit', W_pay_max, W_pay_at_MTOWcap, blue, red, gray, purple, [], xlim_pad, 'Ground roll', 'RFP limit, R1 (25 m)');
+local_panel(2, W_pay_grid, G.V_S, V_S_LIMIT, 'Stall speed (m/s)', 'Stall speed vs landing limit*', W_pay_max, W_pay_at_MTOWcap, blue, red, gray, purple, [], xlim_pad, 'Stall speed', 'Landing limit*');
+local_panel(3, W_pay_grid, G.ROC_max, 0, 'Max rate of climb (m/s)', 'Max ROC vs 0 (climb feasibility)', W_pay_max, W_pay_at_MTOWcap, blue, red, gray, purple, [], xlim_pad, 'Max ROC', 'Cannot climb (0)');
+local_panel(4, W_pay_grid, G.CL_turn, NaN, 'Turn C_L (-)', 'Turn CL vs stall-margined limit', W_pay_max, W_pay_at_MTOWcap, blue, red, gray, purple, G.CL_limit, xlim_pad, 'Turn CL', 'Stall-margined limit (CL_R)');
 
 subplot(2,4,5); hold on; box on; grid on;
 plot(W_pay_grid, G.P_avail_turn, '-', 'Color', orange, 'LineWidth', 1.6, 'DisplayName', 'Available');
 plot(W_pay_grid, G.P_req_turn, '--', 'Color', blue, 'LineWidth', 1.6, 'DisplayName', 'Required');
-xline(W_pay_max, ':', 'Color', gray, 'HandleVisibility', 'off');
-xlabel('Payload mass (kg)'); ylabel('Turn power (W)'); title('Turn power required vs available'); legend('Location','best','FontSize',7);
+xline(W_pay_at_MTOWcap, '-.', 'Color', purple, 'DisplayName', 'MTOW cap, R22');
+xline(W_pay_max, ':', 'Color', gray, 'LineWidth', 1.3, 'DisplayName', 'Max payload');
+xlabel('Payload mass (kg)'); ylabel('Turn power (W)'); title('Turn power required vs available'); legend('Location','best','FontSize',6);
 xlim(xlim_pad);
 
-local_panel(6, W_pay_grid, G.laps_possible, 3, 'min', 'Laps possible (-)', 'Laps possible vs 3 required', W_pay_max, blue, red, gray, [], xlim_pad);
-local_panel(7, W_pay_grid, G.P_peak, P_CAP_RFP, 'max', 'Peak electrical power (W)', 'Peak power vs RFP limit (R21)', W_pay_max, blue, red, gray, [], xlim_pad);
-local_panel(8, W_pay_grid, G.I_peak, I_CAP, 'max', 'Peak current (A)', 'Peak current vs motor/controller limit', W_pay_max, blue, red, gray, [], xlim_pad);
+local_panel(6, W_pay_grid, G.laps_possible, 3, 'Laps possible (-)', 'Laps possible vs 3 required', W_pay_max, W_pay_at_MTOWcap, blue, red, gray, purple, [], xlim_pad, 'Laps possible', 'Laps required, R3 (3)');
+local_panel(7, W_pay_grid, G.P_peak, P_CAP_RFP, 'Peak electrical power (W)', 'Peak power vs RFP limit (R21)', W_pay_max, W_pay_at_MTOWcap, blue, red, gray, purple, [], xlim_pad, 'Peak power', 'RFP limit, R21 (1000 W)');
+local_panel(8, W_pay_grid, G.I_peak, I_CAP, 'Peak current (A)', 'Peak current vs motor/controller limit', W_pay_max, W_pay_at_MTOWcap, blue, red, gray, purple, [], xlim_pad, 'Peak current', 'Motor/controller limit');
 
-if hitMTOWfallback
-    title_binding = 'MTOW cap (R22) -- nothing else binds first';
-else
-    title_binding = binding_name;
-end
-sgtitle(sprintf('Maximum payload %.3f kg (%d cubes), set by: %s', W_pay_max, n_cubes, title_binding), ...
+sgtitle(sprintf('Maximum payload %.3f kg (%d cubes), set by: %s', W_pay_max, n_cubes, binding_name), ...
     'FontWeight', 'bold', 'FontSize', 13);
 annotation('textbox', [0.01 0.0 0.98 0.035], 'String', ...
-    sprintf('* landing speed limit = %.0f m/s is an ASSUMPTION (SizingParams.xlsx V_S_landing_limit) -- no real requirement exists yet', V_S_LIMIT), ...
+    sprintf('* landing speed limit = %.0f m/s is an ASSUMPTION (SizingParams.xlsx V_S_landing_limit) -- no real requirement exists yet.', V_S_LIMIT), ...
     'EdgeColor', 'none', 'FontSize', 8, 'Color', [0.4 0.4 0.4], 'VerticalAlignment', 'bottom');
 
+%% ---- Plot: MTOM vs payload (weight growth and the MTOW cap) ----
+figure('Name','Maximum Payload Weight Growth','Color','w','WindowStyle','docked');
+hold on; box on; grid on;
+plot(W_pay_grid, MTOM_fixed + W_pay_grid, '-', 'Color', blue, 'LineWidth', 1.8, 'DisplayName', 'MTOM');
+yline(MTOW_CAP_KG, '--', 'Color', red, 'LineWidth', 1.2, 'DisplayName', 'MTOW limit, R22 (6 kg)');
+xline(W_pay_at_MTOWcap, '-.', 'Color', purple, 'LineWidth', 1.2, 'DisplayName', 'Payload at MTOW cap');
+xline(W_pay_max, ':', 'Color', gray, 'LineWidth', 1.3, 'DisplayName', 'Maximum payload (reported)');
+plot(W_pay_max, MTOM_fixed + W_pay_max, 'o', 'MarkerFaceColor', orange, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
+text(W_pay_max, MTOM_fixed + W_pay_max, sprintf('  %.3f kg payload\n  %.3f kg MTOM', W_pay_max, MTOM_fixed + W_pay_max), ...
+    'FontSize', 9, 'VerticalAlignment', 'top', 'HorizontalAlignment', 'left');
+xlabel('Payload mass (kg)'); ylabel('MTOM (kg)');
+title('Maximum payload: weight growth against the RFP MTOW cap');
+legend('Location', 'southeast');
+xlim(xlim_pad);
+
 %% ---- Outputs ----
-if isnan(i_next)
-    next_constraint_name = 'none within the swept range';
-else
-    next_constraint_name = checks(i_next).name;
-end
 outputs.MaxPayloadSweep = struct('W_pay_grid', W_pay_grid, 'G', G, 'checks', checks, ...
     'W_pay_cross', W_pay_cross, 'W_pay_max', W_pay_max, 'binding_constraint', binding_name, ...
-    'next_constraint', next_constraint_name, 'W_pay_next', W_pay_next, 'n_cubes', n_cubes, ...
-    'W_pay_at_MTOWcap', W_pay_at_MTOWcap);
+    'next_constraint', next_name, 'W_pay_next', W_pay_next, 'n_cubes', n_cubes, ...
+    'W_pay_at_MTOWcap', W_pay_at_MTOWcap, 'MTOM_fixed', MTOM_fixed);
 
 params.performance.W_pay_max = W_pay_max;
 
 end
 
-function panelOut = local_panel(idx, x, y, lim, sense, ylab, ttl, W_pay_max, blue, red, gray, limArray, xlim_pad)
+function local_panel(idx, x, y, lim, ylab, ttl, W_pay_max, W_pay_MTOWcap, blue, red, gray, purple, limArray, xlim_pad, dataName, limName)
     subplot(2,4,idx); hold on; box on; grid on;
-    plot(x, y, '-o', 'Color', blue, 'LineWidth', 1.4, 'MarkerSize', 4, 'HandleVisibility', 'off');
-    if nargin >= 12 && ~isempty(limArray)
-        plot(x, limArray, '--', 'Color', red, 'LineWidth', 1.2, 'HandleVisibility', 'off');
+    plot(x, y, '-o', 'Color', blue, 'LineWidth', 1.4, 'MarkerSize', 4, 'DisplayName', dataName);
+    if ~isempty(limArray)
+        plot(x, limArray, '--', 'Color', red, 'LineWidth', 1.2, 'DisplayName', limName);
     elseif ~isnan(lim)
-        yline(lim, '--', 'Color', red, 'LineWidth', 1.2, 'HandleVisibility', 'off');
+        yline(lim, '--', 'Color', red, 'LineWidth', 1.2, 'DisplayName', limName);
     end
-    xline(W_pay_max, ':', 'Color', gray, 'HandleVisibility', 'off');
+    xline(W_pay_MTOWcap, '-.', 'Color', purple, 'DisplayName', 'MTOW cap, R22');
+    xline(W_pay_max, ':', 'Color', gray, 'LineWidth', 1.3, 'DisplayName', 'Max payload');
     xlabel('Payload mass (kg)'); ylabel(ylab); title(ttl, 'FontSize', 9);
-    if nargin >= 13 && ~isempty(xlim_pad)
+    legend('Location', 'best', 'FontSize', 6);
+    if ~isempty(xlim_pad)
         xlim(xlim_pad);
     end
-    panelOut = [];
 end
 
-function MTOM = local_weightOnly(params, W_pay)
-    % Fast path for finding the MTOW=6kg sweep bound: only the
-    % lightweight weight/aero convergence loop, none of the heavy
-    % propulsion/performance chain.
-    p = params;
-    p.performance.W_pay = W_pay;
-    MTOM_guess = p.performance.MTOM;
-    err = 1; iter = 0;
-    while err > 0.001 && iter < 50
-        p = InitialCalcs(p);
-        p = DragBuildUp(p);
-        p = calcAero(p);
-        p = VehicleWeightEstimation(p);
-        MTOM_new = p.performance.MTOM;
-        err = abs((MTOM_guess - MTOM_new) / MTOM_guess);
-        MTOM_guess = MTOM_new;
-        iter = iter + 1;
-    end
-    MTOM = p.performance.MTOM;
-end
-
-function r = local_runCandidate(params, W_pay, figs_keep)
-    % Runs one payload candidate through the full weight/stability/
-    % propulsion/performance chain, with every called script's console
-    % output captured via evalc and discarded. Returns NaN/false for
-    % anything not reached if an early stage fails or errors, rather than
-    % erroring the whole sweep.
+function r = local_runCandidate(params, MTOM_fixed, W_pay, figs_keep)
+    % Runs one payload candidate through ONLY the weight-dependent
+    % performance scripts (TakeoffPerformance, ClimbPerformance, the turn
+    % calculation, MissionSimulation), reusing the FIXED baseline
+    % aircraft design (wing area, drag polar, CG, propulsion model)
+    % unchanged -- per A9's explicit "keep the airframe, battery, motor
+    % and propeller as designed" instruction. Console output is captured
+    % via evalc and discarded. Returns NaN/false for anything not reached
+    % if an early stage fails or errors, rather than erroring the whole sweep.
     r = struct('MTOM', NaN, 'S_TO', NaN, 'V_S', NaN, 'ROC_max', NaN, 't_climb', NaN, ...
         'CL_turn', NaN, 'CL_limit', NaN, 'P_req_turn', NaN, 'P_avail_turn', NaN, ...
         'laps_possible', NaN, 'P_peak', NaN, 'I_peak', NaN, 'ok', false);
 
-    p = params;
+    p = params; % the FIXED baseline design, untouched except for the overrides below
     p.performance.W_pay = W_pay;
-
-    MTOM_guess = p.performance.MTOM;
-    err = 1; iter = 0;
-    while err > 0.001 && iter < 50
-        p = InitialCalcs(p);
-        p = DragBuildUp(p);
-        p = calcAero(p);
-        p = VehicleWeightEstimation(p);
-        MTOM_new = p.performance.MTOM;
-        err = abs((MTOM_guess - MTOM_new) / MTOM_guess);
-        MTOM_guess = MTOM_new;
-        iter = iter + 1;
-    end
+    p.performance.MTOM = MTOM_fixed + W_pay;
+    p.performance.MTOW = p.performance.MTOM * p.env.g;
     r.MTOM = p.performance.MTOM;
-    if err > 0.001
-        return
-    end
+
+    rho = p.env.rho; S = p.geometry.S_wing; MTOW_i = p.performance.MTOW; g = p.env.g;
+
+    % Stall speed and liftoff speed both derive from MTOW, so both must
+    % be refreshed here rather than left at the baseline's now-stale
+    % values -- everything else (S, CL_max, CD_0, x_cg_design, the
+    % propulsion model) stays exactly as designed.
+    r.V_S = sqrt(2*MTOW_i/(rho*S*p.aero.CL_max));
+    p.performance.V_S = r.V_S;
+    p.performance.V_TO = p.performance.mult_V_TO * r.V_S;
+    r.CL_limit = p.aero.CL_max / p.performance.mult_V_TO^2; % same stall-margin convention as CL_R at rotation
+
+    model = p.prop.model; % fixed, already solved once in the baseline params -- not re-solved per candidate
 
     try
-        evalc('p = A5B(p);');
-        evalc('[~, p] = PropulsionDragModel(p);');
-        local_closeSweepFigs(figs_keep);
-        model = p.prop.model;
-
-        rho = p.env.rho; S = p.geometry.S_wing; MTOW_i = p.performance.MTOW; g = p.env.g;
-        r.V_S = sqrt(2*MTOW_i/(rho*S*p.aero.CL_max));
-        r.CL_limit = p.aero.CL_max / p.performance.mult_V_TO^2; % same stall-margin convention as CL_R at rotation
-
         evalc('[~, p] = TakeoffPerformance(p);');
         evalc('[~, p] = ClimbPerformance(p);');
         local_closeSweepFigs(figs_keep);
@@ -339,7 +319,17 @@ function r = local_runCandidate(params, W_pay, figs_keep)
         r.ROC_max = p.performance.ROC_max;
         r.t_climb = p.performance.t_climb;
 
-        if ~p.performance.groundRoll_ok || ~(p.performance.ROC_max > 0)
+        % groundRoll_ok=false just means x_LO exceeds the 25 m limit --
+        % still a valid, finite distance, not a computation breakdown, so
+        % it does NOT stop the rest of this candidate's quantities from
+        % being computed (otherwise every panel past "Ground roll" would
+        % go blank the moment it fails, even though the team specifically
+        % wants each quantity's own trend visible across the whole swept
+        % range). ROC_max <= 0 is different: the aircraft genuinely
+        % cannot climb at all, so t_climb would be negative/infinite and
+        % everything downstream (MissionSimulation's energy integration)
+        % becomes meaningless -- that one still stops here.
+        if ~(p.performance.ROC_max > 0)
             local_closeSweepFigs(figs_keep);
             return
         end

@@ -1,6 +1,17 @@
 function params = VehicleWeightEstimation(params)
-T_LF = (2*params.performance.lap_length)/params.performance.V_C;
-T_TU = (2*pi*params.performance.R_req)/params.performance.V_M;
+% Mission requires 3 full laps (Team01_Requirements.slreqx R3 / Team01_
+% StakeholderNeeds.slreqx N2), not 1 -- T_LF and T_TU below used to total
+% only ONE lap's worth of straight/turning time (2 straights = T_LF, 2
+% turns combining to one full circle = T_TU) and were never multiplied
+% up for the other 2 required laps, silently undersizing the battery
+% weight fraction (and therefore MTOM/MTOW, which this function sets for
+% the whole downstream pipeline) relative to the real mission. Fixed by
+% scaling both by the lap count directly, since nothing else in this
+% file reads T_LF/T_TU as "one lap" specifically -- they only feed
+% LevelFlightBatteryWeightFraction and TurningBatteryWeightFraction below.
+N_LAPS = 3;
+T_LF = N_LAPS*(2*params.performance.lap_length)/params.performance.V_C;
+T_TU = N_LAPS*(2*pi*params.performance.R_req)/params.performance.V_M;
 
 % TODO: All of these in the excel
 P_m = params.prop.eta_m * 1000; % revisit, might determined based off W/P; motor efficiency times 1kW battery

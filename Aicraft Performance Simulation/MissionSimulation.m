@@ -185,17 +185,18 @@ if abs(params.performance.P_limit_RFP - P_RFP_LIMIT) > 1
         params.performance.P_limit_RFP, P_RFP_LIMIT);
 end
 
-% FINDING: VehicleWeightEstimation.m's own battery sizing -- the one that
-% actually set MTOM/MTOW for the whole pipeline -- computes T_LF =
-% 2*lap_length/V_C and T_TU = 2*pi*R_req/V_M, which is structurally ONE
-% lap's worth of straight+turn flight (two straights, two turns summing
-% to one full circle), and sums it into the battery weight fraction
-% exactly once. It is never multiplied by the number of laps the course
-% actually requires. This script's mission total above already accounts
-% for all 3 laps; VehicleWeightEstimation.m's sizing appears not to.
-fprintf('  >>> FINDING: VehicleWeightEstimation.m''s battery sizing (which set the MTOM/MTOW used throughout the whole\n');
-fprintf('      pipeline) computes straight+turn energy for ONE lap and never multiplies by the %d laps R3 requires --\n', N_LAPS);
-fprintf('      worth the team''s attention; the battery (and therefore MTOM) may be undersized for the real mission.\n');
+% RESOLVED (was a FINDING): VehicleWeightEstimation.m's own battery
+% sizing -- the one that actually sets MTOM/MTOW for the whole pipeline
+% -- used to compute T_LF = 2*lap_length/V_C and T_TU = 2*pi*R_req/V_M,
+% structurally ONE lap's worth of straight+turn flight, and sum it into
+% the battery weight fraction exactly once, never multiplied by the
+% laps the course actually requires. Fixed directly in
+% VehicleWeightEstimation.m (both now scaled by N_LAPS=3 where they're
+% defined), so MTOM/MTOW upstream of this script already reflect the
+% real 3-lap mission -- nothing left for this script to flag.
+fprintf('  Battery sizing note: VehicleWeightEstimation.m''s T_LF/T_TU are scaled by the %d required laps (fixed --\n', N_LAPS);
+fprintf('      previously only sized for 1 lap), so the MTOM/MTOW used throughout this pipeline already reflect\n');
+fprintf('      the real mission; this script''s own %d-lap total above is consistent with that sizing, not a correction to it.\n', N_LAPS);
 
 %% ---- Plot: battery state of charge through the mission, segments shaded ----
 blue = [0.00 0.45 0.74]; red = [0.80 0.00 0.00]; gray = [0.4 0.4 0.4];

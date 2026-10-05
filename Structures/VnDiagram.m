@@ -6,15 +6,25 @@ function [outputs, params] = VnDiagram(params)
 KG2LB = 2.20462;
 
 % Aircraft-Specific Values
-MTOM = params.performance.MTOM;
-MTOW = params.performance.MTOW;
 S = params.geometry.S_wing;
-c_bar = params.geometry.c_wing;  
+c_bar = params.geometry.c_wing;
 CL_max = params.aero.CL_max;
 CL_max_neg = params.aero.CL_max_neg;   % ASSUMPTION
-CL_alpha = params.aero.CL_Alpha;       
+CL_alpha = params.aero.CL_Alpha;
 rho = params.env.rho;
 g = params.env.g;
+
+% Mass table is the source of truth for structural analysis (team
+% decision, same convention WingLoads.m/TailLoads.m/FuselageLoads.m/
+% TailDraggerTakeOff.m already use): use its own sum as the aircraft
+% weight here, not the iterated params.performance.MTOM/MTOW. This
+% matters beyond just this figure -- WingLoads.m etc. apply the load
+% factors and speeds computed here to THEIR OWN mass-table weight, so
+% deriving those speeds/factors from a different (iterated) total would
+% silently mismatch the two.
+massTable = readtable('SizingParams.xlsx', 'Sheet', 'MassBudget');
+MTOM = sum(massTable.Mass_g)/1000; % kg
+MTOW = MTOM * g; % N
 
 % Self-consistent stall speed for THIS diagram's own rho/S/CL_max/MTOW
 % (same method already used below for V_S_neg) -- guarantees the stall
