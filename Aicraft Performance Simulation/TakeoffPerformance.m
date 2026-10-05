@@ -148,6 +148,7 @@ outputs.TakeoffPerformance = struct('t', t_hist, 'V', V_hist, 'x', x_hist, ...
 
 params.performance.groundRoll_x = x_LO;
 params.performance.groundRoll_t = t_LO;
+params.performance.groundRoll_V_LO = V_LO; % exposed for Deliverable 6's mission energy budget
 params.performance.groundRoll_ok = ok_S_TO;
 
 end

@@ -49,6 +49,7 @@ if abs(V_max_level - V_max_level_A8) > 0.5
     fprintf('  >>> FINDING: refined V_max_level differs from the one A8''s V_NE check already used by %.2f m/s -- A8 ran earlier in Main.m with the older value.\n', ...
         V_max_level - V_max_level_A8);
 end
+params.performance.V_max_level_A8 = V_max_level_A8; % kept for Deliverable 7's assumption-validation table, since the next line overwrites the original
 params.performance.V_max_level = V_max_level; % update for anything that runs after this point
 
 %% ---- Electrical power required: throttle search at each V ----

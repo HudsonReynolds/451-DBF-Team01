@@ -122,6 +122,7 @@ ok_2D = (Pelec_2D <= P_cap) & (I_2D <= I_cap) & ~isnan(T_2D);
 throttle_cap   = nan(1, nV);
 T_avail        = nan(1, nV);
 Pelec_avail    = nan(1, nV);
+I_avail        = nan(1, nV);
 RPM_avail      = nan(1, nV);
 throttle_bound = false(1, nV); % true where the cap actually reduces throttle below 100%
 
@@ -131,7 +132,7 @@ for j = 1:nV
     [~, k] = max(throttle_grid(idx_ok)); % the largest throttle at this V that still satisfies every limit
     i_best = idx_ok(k);
     tau_cap = throttle_grid(i_best);
-    T_cap = T_2D(i_best,j); Pelec_cap = Pelec_2D(i_best,j); RPM_cap = RPM_2D(i_best,j);
+    T_cap = T_2D(i_best,j); Pelec_cap = Pelec_2D(i_best,j); I_cap_j = I_2D(i_best,j); RPM_cap = RPM_2D(i_best,j);
 
     % Snapping to the nearest throttle-grid point otherwise makes T_avail
     % (and anything built from it, e.g. rate of climb) step discontinuously
@@ -152,6 +153,7 @@ for j = 1:nV
             tau_cap   = throttle_grid(i_best)   + frac*(throttle_grid(i_best+1)   - throttle_grid(i_best));
             T_cap     = T_2D(i_best,j)          + frac*(T_2D(i_best+1,j)          - T_2D(i_best,j));
             Pelec_cap = Pelec_2D(i_best,j)      + frac*(Pelec_2D(i_best+1,j)      - Pelec_2D(i_best,j));
+            I_cap_j   = I_2D(i_best,j)          + frac*(I_2D(i_best+1,j)          - I_2D(i_best,j));
             RPM_cap   = RPM_2D(i_best,j)        + frac*(RPM_2D(i_best+1,j)        - RPM_2D(i_best,j));
         end
     end
@@ -159,6 +161,7 @@ for j = 1:nV
     throttle_cap(j) = tau_cap;
     T_avail(j)      = T_cap;
     Pelec_avail(j)  = Pelec_cap;
+    I_avail(j)      = I_cap_j;
     RPM_avail(j)    = RPM_cap;
     throttle_bound(j) = throttle_cap(j) < 0.999;
 end
@@ -172,10 +175,12 @@ end
 throttle_cap = local_fillInteriorNaN(throttle_cap);
 T_avail      = local_fillInteriorNaN(T_avail);
 Pelec_avail  = local_fillInteriorNaN(Pelec_avail);
+I_avail      = local_fillInteriorNaN(I_avail);
 RPM_avail    = local_fillInteriorNaN(RPM_avail);
 
 T_avail_fn     = griddedInterpolant(V_grid, T_avail, 'linear', 'nearest');
 Pelec_avail_fn = griddedInterpolant(V_grid, Pelec_avail, 'linear', 'nearest');
+I_avail_fn     = griddedInterpolant(V_grid, I_avail, 'linear', 'nearest');
 throttle_cap_fn = griddedInterpolant(V_grid, throttle_cap, 'linear', 'nearest');
 RPM_avail_fn   = griddedInterpolant(V_grid, RPM_avail, 'linear', 'nearest');
 
@@ -191,8 +196,10 @@ RPM_avail_fn   = griddedInterpolant(V_grid, RPM_avail, 'linear', 'nearest');
 % instead of assuming the lowest throttle grid point is usable.
 T_2D_fill     = fillmissing(T_2D, 'linear', 2, 'EndValues', 'none');
 Pelec_2D_fill = fillmissing(Pelec_2D, 'linear', 2, 'EndValues', 'none');
+I_2D_fill     = fillmissing(I_2D, 'linear', 2, 'EndValues', 'none');
 T_grid_fn     = griddedInterpolant({throttle_grid, V_grid}, T_2D_fill, 'linear', 'none');
 Pelec_grid_fn = griddedInterpolant({throttle_grid, V_grid}, Pelec_2D_fill, 'linear', 'none');
+I_grid_fn     = griddedInterpolant({throttle_grid, V_grid}, I_2D_fill, 'linear', 'none');
 find_throttle_for_thrust = @(V, T_req) local_findThrottleForThrust(V, T_req, throttle_grid, T_grid_fn);
 
 %% ---- Landing-gear drag counted once: verify, don't assume ----
@@ -244,8 +251,8 @@ model = struct( ...
     'CD_trim_fn', CD_trim_fn, 'CL_minDrag', CL_minDrag, 'CD_trim_is_parabolic_at_zero', CD_trim_is_parabolic_at_zero, ...
     'D_prop', D_prop, 'R_prop', R_prop, 'RPM_lim', RPM_lim, ...
     'V_grid', V_grid, 'throttle_grid', throttle_grid, ...
-    'T_avail_fn', T_avail_fn, 'Pelec_avail_fn', Pelec_avail_fn, 'throttle_cap_fn', throttle_cap_fn, 'RPM_avail_fn', RPM_avail_fn, ...
-    'T_grid_fn', T_grid_fn, 'Pelec_grid_fn', Pelec_grid_fn, 'find_throttle_for_thrust', find_throttle_for_thrust, ...
+    'T_avail_fn', T_avail_fn, 'Pelec_avail_fn', Pelec_avail_fn, 'I_avail_fn', I_avail_fn, 'throttle_cap_fn', throttle_cap_fn, 'RPM_avail_fn', RPM_avail_fn, ...
+    'T_grid_fn', T_grid_fn, 'Pelec_grid_fn', Pelec_grid_fn, 'I_grid_fn', I_grid_fn, 'find_throttle_for_thrust', find_throttle_for_thrust, ...
     'P_cap', P_cap, 'I_cap', I_cap, 'throttle_bound', throttle_bound);
 
 params.prop.model = model; % the reusable propulsion model every other A9 script queries

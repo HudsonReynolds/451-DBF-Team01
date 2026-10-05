@@ -66,6 +66,18 @@ fprintf('========================================\n');
 
 [~, params] = TurnPerformance(params);
 
+fprintf('\n========================================\n');
+fprintf('  AIRCRAFT PERFORMANCE (A9, Deliverables 6-9)\n');
+fprintf('========================================\n');
+
+[~, params] = MissionSimulation(params);
+
+[~, params] = AssumptionValidation(params);
+
+[~, params] = MaxPayloadSweep(params);
+
+[~, params] = RequirementsValidation(params);
+
 % Save every figure generated above into Plots/, replacing whatever was
 % there before -- so Plots/ always matches exactly this run's figures.
 %ExportAllFigures('Plots');
