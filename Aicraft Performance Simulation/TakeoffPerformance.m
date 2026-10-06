@@ -4,11 +4,10 @@ function [outputs, params] = TakeoffPerformance(params)
 %
 % Integrates the ground roll in time (forward Euler), using thrust from
 % PropulsionDragModel.m's capped model (Deliverable 1) at full throttle
-% and the trimmed drag polar (also Deliverable 1) at the rotation CL
-% already established in InitialCalcs.m (CL_TO = CL_C, "no flaps, same as
-% cruise"). Reports ground roll against the RFP limit (S_TO) and plots
-% velocity/distance vs time with lift-off marked, matching the A9 example
-% figure's style.
+% and the trimmed drag polar (also Deliverable 1) at the ground-roll CL.
+% Reports ground roll against the RFP limit (S_TO) and plots velocity/
+% distance vs time with lift-off marked, matching the A9 example figure's
+% style.
 
 if ~isfield(params.prop, 'model')
     error('TakeoffPerformance:noModel', 'Run PropulsionDragModel(params) first -- this script needs its capped thrust-available model.');
@@ -30,7 +29,20 @@ mu_roll = 0.04;
 
 dt = 0.01; % s -- time step, stated per A9's instruction
 
-CL_TO = params.aero.CL_TO; % "no flaps, same as cruise" (InitialCalcs.m)
+% Ground-roll CL: the lecture's convention is "CLg from the ground
+% attitude" -- the lift coefficient the aircraft actually sits at on its
+% gear, not an arbitrary value. TailDraggerTakeOff.m (A8) computes exactly
+% this from the as-placed landing-gear geometry and the linear lift model
+% (CL_ground_attitude = CL_Alpha*(alpha3-alpha_0L)), once the gear exists
+% to compute it from. Falls back to InitialCalcs.m's early placeholder
+% (CL_TO = CL_C, "no flaps, same as cruise") if A8 Structures hasn't run.
+if isfield(params.aero, 'CL_ground_attitude')
+    CL_TO = params.aero.CL_ground_attitude;
+    CL_TO_source = 'ground attitude, TailDraggerTakeOff.m';
+else
+    CL_TO = params.aero.CL_TO;
+    CL_TO_source = 'placeholder, CL_C (run A8 Structures for the real value)';
+end
 V_TO  = params.performance.V_TO; % rotation/lift-off speed, mult_V_TO * V_S
 
 %% ---- Forward-Euler integration ----
@@ -96,7 +108,7 @@ ok_S_TO = x_LO <= S_TO_limit;
 fprintf('\n--- Take-off Performance (Deliverable 2) ---\n');
 fprintf('  Time step:          dt = %.3f s\n', dt);
 fprintf('  Rolling friction:   mu = %.2f  (A9-stated, not env.mu_TO = %.2f)\n', mu_roll, params.env.mu_TO);
-fprintf('  Lift-off CL:        CL_TO = %.3f  (no flaps)\n', CL_TO);
+fprintf('  Ground-roll CL:     CL_TO = %.3f  (%s)\n', CL_TO, CL_TO_source);
 fprintf('  Lift-off time:      t_LO = %.2f s\n', t_LO);
 fprintf('  Lift-off distance:  x_LO = %.2f m\n', x_LO);
 fprintf('  Lift-off speed:     V_LO = %.2f m/s\n', V_LO);
@@ -106,6 +118,8 @@ fprintf('  Ground roll vs RFP limit (%.1f m): %s\n', S_TO_limit, local_ternary(o
 blue = [0.00 0.45 0.74]; orange = [0.85 0.33 0.10];
 
 figure('Name','Take-off Ground Roll','Color','w','WindowStyle','docked');
+t_layout = tiledlayout(1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
+nexttile(t_layout, [1 2]);
 hold on; box on; grid on;
 
 yyaxis left
@@ -140,6 +154,16 @@ legend('Location', 'northwest');
 % the curves then look like they're abruptly chopped off mid-chart
 % instead of simply running to the edge of the plotted window.
 xlim([0, t_hist(end)]);
+
+% Compact key-value panel beside the plot, matching the lecture's own
+% example-figure layout.
+addInfoTable(nexttile(t_layout), { ...
+    'Ground roll',      sprintf('%.2f m', x_LO); ...
+    'RFP limit',         sprintf('%.0f m', S_TO_limit); ...
+    'Time to lift-off',  sprintf('%.2f s', t_LO); ...
+    'V_TO',              sprintf('%.2f m/s', V_LO); ...
+    'CL_g, mu',          sprintf('%.2f, %.2f', CL_TO, mu_roll); ...
+    'Time step',         sprintf('%.0f ms', dt*1000)});
 
 %% ---- Outputs ----
 outputs.TakeoffPerformance = struct('t', t_hist, 'V', V_hist, 'x', x_hist, ...

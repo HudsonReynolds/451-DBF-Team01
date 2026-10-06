@@ -36,6 +36,8 @@ ServoSizing(params);
 
 params = PropulsionSizing(params);
 
+PropellerCharacterization(params); 
+
 fprintf('\n========================================\n');
 fprintf('  STRUCTURES (A8, Deliverables 2-4)\n');
 fprintf('========================================\n');
@@ -84,3 +86,9 @@ fprintf('========================================\n');
 
 writeOutputs(params, "SizingParams.xlsx");
 
+<<<<<<< Updated upstream
+=======
+% Save every figure generated above into Plots/, replacing whatever was
+% there before -- so Plots/ always matches exactly this run's figures.
+% ExportAllFigures('Plots');
+>>>>>>> Stashed changes

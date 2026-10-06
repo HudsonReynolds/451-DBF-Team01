@@ -171,10 +171,10 @@ for i = 1:nT
 end
 
 %% ---- Throttle cap: RFP power limit, motor power rating, motor current limit ----
-% ASSUMPTION -- see the Word document: P_limit_RFP, P_motor_rated and
-% I_motor_limit are placeholders (SizingParams.xlsx, added for A9) until
-% the team confirms the real RFP power-limit rule and the motor's
-% datasheet ratings.
+% All three are now confirmed, real values (SizingParams.xlsx): P_limit_RFP
+% = 1000 W from Team01_Requirements.slreqx R21; P_motor_rated = 890 W and
+% I_motor_limit = 60 A from the selected motor's datasheet rating. No
+% longer placeholders.
 P_cap = min(params.performance.P_limit_RFP, params.prop.P_motor_rated);
 I_cap = params.prop.I_motor_limit;
 
@@ -302,7 +302,7 @@ fprintf('      the table at the same RPM -- a %s thrust correction is now applie
 fprintf('  \nLanding-gear drag: CD_0_gear / CD_0 = %.1f%% of parasite drag, summed once into CD_0_comp (DragBuildUp.m) and never re-added downstream.\n', 100*gear_fraction_of_CD0);
 fprintf('  \nUsable battery energy fraction used throughout: useableCapacity=%.0f%% x temp_derate=%.0f%% = %.0f%% of the nominal pack.\n', ...
     100*params.prop.useableCapacity, 100*params.prop.temp_derate, 100*params.prop.useableCapacity*params.prop.temp_derate);
-fprintf('  \nThrottle cap: P_limit_RFP=%.0f W, P_motor_rated=%.0f W, I_motor_limit=%.0f A (ASSUMPTIONS -- see Word doc).\n', ...
+fprintf('  \nThrottle cap: P_limit_RFP=%.0f W (R21), P_motor_rated=%.0f W, I_motor_limit=%.0f A (motor datasheet).\n', ...
     params.performance.P_limit_RFP, params.prop.P_motor_rated, params.prop.I_motor_limit);
 if any(throttle_bound)
     V_bind = V_grid(find(throttle_bound, 1));

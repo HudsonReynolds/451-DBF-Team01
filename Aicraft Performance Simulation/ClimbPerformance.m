@@ -76,6 +76,8 @@ fprintf('  Time to RFP altitude (%.0f m): %.2f s, horizontal distance %.1f m (co
 blue = [0.00 0.45 0.74]; red = [0.80 0.00 0.00];
 
 figure('Name','Climb Performance','Color','w','WindowStyle','docked');
+t_layout = tiledlayout(1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
+nexttile(t_layout, [1 2]);
 hold on; box on; grid on;
 
 plot(V_sweep, ROC, '-', 'Color', blue, 'LineWidth', 1.8, 'DisplayName', 'Rate of climb at full throttle');
@@ -94,6 +96,14 @@ ylim([0, ROC_max*1.25]);
 % sliver of margin to its left so it actually shows as a line.
 xlim([V_S - 0.03*(V_sweep(end)-V_S), V_sweep(end)]);
 
+% Compact key-value panel beside the plot, matching the lecture's own
+% example-figure layout.
+addInfoTable(nexttile(t_layout), { ...
+    'Best rate of climb', sprintf('%.2f m/s', ROC_max); ...
+    'at speed',            sprintf('%.2f m/s', V_ROC_max); ...
+    sprintf('Time to %.0f m', climb_alt),     sprintf('%.2f s', t_climb); ...
+    sprintf('Distance to %.0f m', climb_alt), sprintf('%.0f m', x_climb)});
+
 %% ---- Outputs ----
 outputs.ClimbPerformance = struct('V', V_sweep, 'ROC', ROC, 'ROC_max', ROC_max, 'V_ROC_max', V_ROC_max, ...
     't_climb', t_climb, 'x_climb', x_climb, 'climb_alt', climb_alt);
@@ -101,5 +111,6 @@ outputs.ClimbPerformance = struct('V', V_sweep, 'ROC', ROC, 'ROC_max', ROC_max, 
 params.performance.ROC_max = ROC_max;
 params.performance.V_ROC_max = V_ROC_max;
 params.performance.t_climb = t_climb;
+params.performance.x_climb = x_climb; % needed by MissionSimulation.m's segment table (horizontal distance covered while climbing)
 
 end

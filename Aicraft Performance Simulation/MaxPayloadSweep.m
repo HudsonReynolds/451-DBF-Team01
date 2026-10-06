@@ -30,7 +30,9 @@ function [outputs, params] = MaxPayloadSweep(params)
 %   1. Ground roll, against the RFP limit (R1, 25 m).
 %   2. Stall speed, against the landing requirement (LANDING_SPEED_RATIO
 %      x the baseline self-consistent stall speed -- an invented
-%      placeholder ratio; see item below).
+%      placeholder ratio; see item below). Where this payload is reached
+%      is solved in closed form (V_S is a plain algebraic function of
+%      mass), not interpolated off the swept grid like the other seven.
 %   3. Maximum rate of climb (and time to the RFP altitude).
 %   4. The course turn: lift coefficient against CL_max WITH the stall
 %      margin already used elsewhere in this codebase (CL_R =
@@ -185,6 +187,17 @@ for c = 1:numel(checks)
         W_pay_cross(c) = W_pay_grid(i_fail-1) + frac*(W_pay_grid(i_fail) - W_pay_grid(i_fail-1));
     end
 end
+
+% Stall speed is solved in closed form here, not by interpolating the
+% swept grid like the other seven checks -- V_S(W_pay) is a plain
+% algebraic function of mass (sqrt(2*(MTOM_fixed+W_pay)*g/(rho*S*CL_max))),
+% so inverting it directly for V_S = V_S_LIMIT is exact, matching the
+% lecture's own closed-form mp,max formula, rather than an approximation
+% from 16 grid points (ground roll and laps possible genuinely need the
+% sweep -- they come from integrating/simulating, not a formula).
+i_stall = find(strcmp({checks.name}, 'Stall speed'));
+W_pay_stall_closedform = (rho*S*params.aero.CL_max*V_S_LIMIT^2)/(2*params.env.g) - MTOM_fixed;
+W_pay_cross(i_stall) = max(W_pay_stall_closedform, 0);
 
 [W_pay_max_analyses, i_binding] = min(W_pay_cross);
 

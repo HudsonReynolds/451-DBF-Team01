@@ -168,6 +168,15 @@ alpha_0L_deg = -rad2deg(params.aero.CL_0 / params.aero.CL_Alpha);
 alpha_stall_deg = alpha_0L_deg + rad2deg(params.aero.CL_max / params.aero.CL_Alpha);
 three_pt_ok = alpha3_deg <= alpha_stall_deg - 2;
 
+% Exposed for A9's TakeoffPerformance.m: the lift coefficient the aircraft
+% actually sits at in this three-point ground attitude (linear lift model,
+% same CL = CL_Alpha*(alpha-alpha_0L) used for alpha_stall_deg above) --
+% "CLg from the ground attitude," not an arbitrary assumed value. Only
+% meaningful once this script has run (needs the as-placed landing-gear
+% geometry), so A9 falls back to its own placeholder if this hasn't run.
+CL_ground_attitude = params.aero.CL_Alpha * deg2rad(alpha3_deg - alpha_0L_deg);
+params.aero.CL_ground_attitude = CL_ground_attitude;
+
 % Overturn angle, p.7/9: about the main-to-tail axis for a tail-dragger,
 % d = plan distance from the CG to that axis, phi = atan(hcg/d) <= 63 deg.
 % Needs a lateral track width, not previously modelled anywhere in this
@@ -336,6 +345,7 @@ outputs.TailDraggerTakeOff = struct('V_tailUp', V_tailUp, 'V_TO', V_TO, 'lifts_b
     'alpha_tf_deg', alpha_tf_deg, 'tip_forward_ok', tf_ok, ...
     'Ft_W', Ft_W, 'tail_wheel_load_ok', ft_ok, ...
     'theta3_deg', theta3_deg, 'alpha3_deg', alpha3_deg, 'alpha_stall_deg', alpha_stall_deg, 'three_point_ok', three_pt_ok, ...
+    'CL_ground_attitude', CL_ground_attitude, ...
     'phi_overturn_deg', phi_deg, 'overturn_ok', overturn_ok, 'gear_track', gear_track, ...
     'prop_diameter', D_prop, 'prop_clearance', prop_clearance, 'prop_clearance_ok', prop_ok, ...
     'T_avg', T_avg, 'a_avg', a_avg);
