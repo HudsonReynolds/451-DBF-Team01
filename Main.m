@@ -86,9 +86,9 @@ fprintf('========================================\n');
 
 writeOutputs(params, "SizingParams.xlsx");
 
-<<<<<<< Updated upstream
-=======
-% Save every figure generated above into Plots/, replacing whatever was
-% there before -- so Plots/ always matches exactly this run's figures.
-% ExportAllFigures('Plots');
->>>>>>> Stashed changes
+% <<<<<<< Updated upstream
+% =======
+% % Save every figure generated above into Plots/, replacing whatever was
+% % there before -- so Plots/ always matches exactly this run's figures.
+% % ExportAllFigures('Plots');
+% >>>>>>> Stashed changes
