@@ -1,6 +1,6 @@
 function params = readParams(excelFile)
 
-    raw = readcell(excelFile, 'Sheet', 'Sheet1'); % explicit sheet name -- don't rely on tab order/position
+    raw = readcell(excelFile, 'Sheet', 'Inputs'); % explicit sheet name -- don't rely on tab order/position
 
     params = struct();
 
