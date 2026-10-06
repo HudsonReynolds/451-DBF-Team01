@@ -24,6 +24,32 @@ function [outputs, params] = PropulsionDragModel(params)
 % take-off/climb/cruise/turn integration, which all need thrust and
 % electrical power at many different airspeeds.
 
+%% ---- Mass source: the MassBudget sheet, not the iterated sizing result ----
+% A8's structural scripts (WingLoads.m, TailLoads.m, FuselageLoads.m,
+% TailDraggerTakeOff.m, VnDiagram.m, VnOperatingEnvelope.m) all use a
+% separate 'MassBudget' sheet in SizingParams.xlsx -- a component mass-
+% station table -- as the source of truth for aircraft weight, by
+% deliberate team decision, rather than params.performance.MTOM/MTOW
+% (the iterated result of VehicleWeightEstimation.m's weight-fraction
+% sizing loop). A9 now follows the same convention, per the team's
+% direction: overridden here, the first A9 script every other A9
+% deliverable (D2-D9) calls into, so the corrected mass propagates
+% through params.performance.MTOM/MTOW automatically -- no need to edit
+% each of the other 8 scripts individually, since they already read
+% those same fields. The iterated value is left untouched everywhere
+% else in the pipeline (A5B, Structures, etc. already ran before this
+% point); only A9's own copy of params is affected from here on.
+massTable = readtable('SizingParams.xlsx', 'Sheet', 'MassBudget');
+MTOM_massTable = sum(massTable.Mass_g)/1000; % kg
+MTOM_iterated = params.performance.MTOM;
+pct_diff = 100*(MTOM_massTable - MTOM_iterated)/MTOM_iterated;
+fprintf('\n--- A9 mass source (Deliverable 1) ---\n');
+fprintf('  MassBudget sheet (source of truth, same as A8): %.4f kg\n', MTOM_massTable);
+fprintf('  Iterated sizing result (VehicleWeightEstimation.m, no longer used by A9): %.4f kg (%+.1f%% different)\n', ...
+    MTOM_iterated, pct_diff);
+params.performance.MTOM = MTOM_massTable;
+params.performance.MTOW = MTOM_massTable * params.env.g;
+
 rho = params.env.rho;
 IN2M = 0.0254;
 MS2MPH = 2.23694;
