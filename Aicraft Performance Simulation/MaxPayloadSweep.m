@@ -28,8 +28,9 @@ function [outputs, params] = MaxPayloadSweep(params)
 % checks once the turn and peak-draw items are split into their two
 % parts each):
 %   1. Ground roll, against the RFP limit (R1, 25 m).
-%   2. Stall speed, against the landing requirement (SizingParams.xlsx
-%      V_S_landing_limit -- an invented placeholder; see item below).
+%   2. Stall speed, against the landing requirement (LANDING_SPEED_RATIO
+%      x the baseline self-consistent stall speed -- an invented
+%      placeholder ratio; see item below).
 %   3. Maximum rate of climb (and time to the RFP altitude).
 %   4. The course turn: lift coefficient against CL_max WITH the stall
 %      margin already used elsewhere in this codebase (CL_R =
@@ -49,18 +50,22 @@ function [outputs, params] = MaxPayloadSweep(params)
 % marked on every panel (separate vertical lines), and the sweep itself
 % continues past both so each quantity's own natural trend is visible.
 %
-% ASSUMPTION (SizingParams.xlsx, V_S_landing_limit): no numeric landing
-% speed requirement exists anywhere in this project's prior assignments
-% or the team's requirements document (R5 only says "lands on grass
-% without damage," no speed). Per the team's direction, a placeholder of
-% 13 m/s (roughly 25% above the baseline self-consistent stall speed) was
-% added and clearly flagged for the team to replace with a real number.
+% ASSUMPTION (LANDING_SPEED_RATIO below): no numeric landing speed
+% requirement exists anywhere in this project's prior assignments or the
+% team's requirements document (R5 only says "lands on grass without
+% damage," no speed). Per the team's direction, a placeholder ratio of
+% 1.25x the baseline self-consistent stall speed stands in (1.1-1.3x
+% V_stall is typical practice for this class of RC aircraft; full-scale
+% aircraft use 1.3x, RC/DBF designs commonly land a bit slower since
+% there's no passenger comfort to protect). Computed fresh from V_S here
+% -- not read from a fixed SizingParams.xlsx cell -- so it automatically
+% tracks V_S if the design changes; the computed value is still WRITTEN
+% back to SizingParams.xlsx (row 109) each run, purely as a visible
+% record, not as something this script reads back in.
+LANDING_SPEED_RATIO = 1.25;
 
 if ~isfield(params.performance, 'W_pay')
     error('MaxPayloadSweep:noBaseline', 'params must already contain a baseline W_pay (run the normal Main.m pipeline first).');
-end
-if ~isfield(params.performance, 'V_S_landing_limit')
-    error('MaxPayloadSweep:noLandingLimit', 'SizingParams.xlsx needs a V_S_landing_limit entry (performance) -- see this script''s header.');
 end
 if ~isfield(params.prop, 'model')
     error('MaxPayloadSweep:noModel', 'Run PropulsionDragModel(params) first -- this script reuses that FIXED model for every candidate, it does not re-solve it.');
@@ -83,10 +88,34 @@ end
 N_PTS = 16;
 W_pay_grid = linspace(0.02, 1.6*W_pay_at_MTOWcap, N_PTS); % swept well past the MTOW cap so each quantity's own trend is visible, per the team's request
 
+% Baseline self-consistent stall speed (as-designed aircraft, zero added
+% payload) -- same formula AssumptionValidation.m/CruisePerformance.m/
+% ClimbPerformance.m/local_runCandidate below all already use. The
+% landing-speed limit is a fixed property of the aircraft/pilot (how fast
+% it's allowed to touch down), so it's derived once here from the
+% baseline design, not recomputed per sweep candidate, and threaded into
+% local_runCandidate below rather than read from params there.
+rho = params.env.rho; S = params.geometry.S_wing;
+V_S_baseline = sqrt(2*params.performance.MTOW/(rho*S*params.aero.CL_max));
+V_S_LIMIT = LANDING_SPEED_RATIO * V_S_baseline;
+
 fprintf('\n--- Maximum Payload Sweep (Deliverable 8) ---\n');
 fprintf('  Fixed empty+battery mass: %.3f kg (baseline MTOM %.3f kg - baseline payload %.3f kg)\n', MTOM_fixed, params.performance.MTOM, W_pay_baseline);
 fprintf('  Payload at MTOW = 6 kg (R22): %.3f kg\n', W_pay_at_MTOWcap);
+fprintf('  Landing speed limit: %.2f x baseline stall speed (%.2f m/s) = %.2f m/s (ASSUMPTION -- no real requirement exists yet)\n', ...
+    LANDING_SPEED_RATIO, V_S_baseline, V_S_LIMIT);
 fprintf('  Sweeping W_pay from %.3f to %.3f kg over %d points.\n', W_pay_grid(1), W_pay_grid(end), N_PTS);
+
+% Report the computed value back to SizingParams.xlsx (row 109) purely as
+% a visible record of what this run computed -- this script does not read
+% that cell back in; see the ASSUMPTION note above local_runCandidate.
+try
+    writematrix(V_S_LIMIT, 'SizingParams.xlsx', 'Sheet', 'Sheet1', 'Range', 'C109');
+    writematrix(sprintf('COMPUTED each run by MaxPayloadSweep.m = %.2fx the baseline self-consistent stall speed -- not read back in as an input, edit LANDING_SPEED_RATIO in that script instead.', LANDING_SPEED_RATIO), ...
+        'SizingParams.xlsx', 'Sheet', 'Sheet1', 'Range', 'F109');
+catch ME
+    fprintf('  (could not write the computed landing-speed limit back to SizingParams.xlsx: %s)\n', ME.message);
+end
 
 runLabel = char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm'));
 logRows = cell(0, 16);
@@ -99,7 +128,7 @@ G = struct('MTOM', nan(1,N_PTS), 'S_TO', nan(1,N_PTS), 'V_S', nan(1,N_PTS), ...
     'ok', false(1,N_PTS));
 
 for i = 1:N_PTS
-    r = local_runCandidate(params, MTOM_fixed, W_pay_grid(i), figs_keep);
+    r = local_runCandidate(params, MTOM_fixed, W_pay_grid(i), figs_keep, V_S_LIMIT);
     fn = fieldnames(G);
     for kf = 1:numel(fn)-1 % all but 'ok'
         G.(fn{kf})(i) = r.(fn{kf});
@@ -114,7 +143,6 @@ local_writeLog(logRows, runLabel);
 I_CAP = params.prop.I_motor_limit;
 P_CAP_RFP = 1000; % R21
 S_TO_LIMIT = params.performance.S_TO;
-V_S_LIMIT = params.performance.V_S_landing_limit;
 
 checks = struct( ...
     'name', {'Ground roll', 'Stall speed', 'Max rate of climb', 'Turn CL (stall margin)', ...
@@ -240,7 +268,7 @@ local_panel(8, W_pay_grid, G.I_peak, I_CAP, 'Peak current (A)', 'Peak current vs
 sgtitle(sprintf('Maximum payload %.3f kg (%d cubes), set by: %s', W_pay_max, n_cubes, binding_name), ...
     'FontWeight', 'bold', 'FontSize', 13);
 annotation('textbox', [0.01 0.0 0.98 0.035], 'String', ...
-    sprintf('* landing speed limit = %.0f m/s is an ASSUMPTION (SizingParams.xlsx V_S_landing_limit) -- no real requirement exists yet.', V_S_LIMIT), ...
+    sprintf('* landing speed limit = %.1f m/s (%.2fx baseline stall speed) is an ASSUMPTION -- no real requirement exists yet.', V_S_LIMIT, LANDING_SPEED_RATIO), ...
     'EdgeColor', 'none', 'FontSize', 8, 'Color', [0.4 0.4 0.4], 'VerticalAlignment', 'bottom');
 
 %% ---- Plot: MTOM vs payload (weight growth and the MTOW cap) ----
@@ -285,7 +313,7 @@ function local_panel(idx, x, y, lim, ylab, ttl, W_pay_max, W_pay_MTOWcap, blue, 
     end
 end
 
-function r = local_runCandidate(params, MTOM_fixed, W_pay, figs_keep)
+function r = local_runCandidate(params, MTOM_fixed, W_pay, figs_keep, V_S_LIMIT)
     % Runs one payload candidate through ONLY the weight-dependent
     % performance scripts (TakeoffPerformance, ClimbPerformance, the turn
     % calculation, MissionSimulation), reusing the FIXED baseline
@@ -384,7 +412,7 @@ function r = local_runCandidate(params, MTOM_fixed, W_pay, figs_keep)
         r.ok = p.performance.groundRoll_ok && (r.ROC_max > 0) && (r.CL_turn <= r.CL_limit) ...
             && ~isnan(r.P_req_turn) && (r.P_req_turn <= r.P_avail_turn) ...
             && (r.laps_possible >= 3) && (r.P_peak <= 1000) && (r.I_peak <= p.prop.I_motor_limit) ...
-            && (r.V_S <= p.performance.V_S_landing_limit) && (r.S_TO <= p.performance.S_TO);
+            && (r.V_S <= V_S_LIMIT) && (r.S_TO <= p.performance.S_TO);
     catch
         % leave partial results as already filled in; ok stays false
     end

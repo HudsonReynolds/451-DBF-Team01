@@ -147,23 +147,25 @@ legend('Location', 'best');
 xlim([V_S - 0.03*(V_sweep(end)-V_S), V_sweep(end)]);
 
 %% ---- Plot 3: electrical power available and required (A9's separate bullet) ----
-% Commented out for now -- team is revisiting whether this figure is
-% needed on top of the Power Required plot above. Re-enable by
-% uncommenting if it's decided to keep it.
-% figure('Name','Electrical Power Available and Required','Color','w','WindowStyle','docked');
-% hold on; box on; grid on;
-% plot(V_sweep, P_avail_elec, '-', 'Color', orange, 'LineWidth', 1.8, 'DisplayName', 'Electrical power available, full throttle');
-% plot(V_sweep, P_req_elec, '--', 'Color', blue, 'LineWidth', 1.8, 'DisplayName', 'Electrical power required, level flight');
-% xline(V_S, ':', 'Color', [0.3 0.3 0.3], 'DisplayName', 'Stall speed');
-% if ~isnan(V_max_level)
-%     plot(V_max_level, interp1(V_sweep, P_req_elec, V_max_level), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
-%     text(V_max_level, interp1(V_sweep, P_req_elec, V_max_level), sprintf('  maximum level speed %.1f m/s', V_max_level), ...
-%         'FontSize', 9, 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'left');
-% end
-% xlabel('True airspeed (m/s)'); ylabel('Electrical power (W)');
-% title('Electrical power available and required');
-% legend('Location', 'best');
-% xlim([V_S - 0.03*(V_sweep(end)-V_S), V_sweep(end)]);
+% A9 Deliverable 4 lists this as its own required bullet ("Plot
+% electrical power available and electrical power required against
+% airspeed"), distinct from the thrust plot (Plot 1) and the power-
+% required-with-efficiency plot (Plot 2) -- re-enabled so that bullet has
+% its own figure, per the assignment's explicit checklist item.
+figure('Name','Electrical Power Available and Required','Color','w','WindowStyle','docked');
+hold on; box on; grid on;
+plot(V_sweep, P_avail_elec, '-', 'Color', orange, 'LineWidth', 1.8, 'DisplayName', 'Electrical power available, full throttle');
+plot(V_sweep, P_req_elec, '--', 'Color', blue, 'LineWidth', 1.8, 'DisplayName', 'Electrical power required, level flight');
+xline(V_S, ':', 'Color', [0.3 0.3 0.3], 'DisplayName', 'Stall speed');
+if ~isnan(V_max_level)
+    plot(V_max_level, interp1(V_sweep, P_req_elec, V_max_level), 'o', 'MarkerFaceColor', red, 'MarkerEdgeColor', 'k', 'MarkerSize', 8, 'HandleVisibility', 'off');
+    text(V_max_level, interp1(V_sweep, P_req_elec, V_max_level), sprintf('  maximum level speed %.1f m/s', V_max_level), ...
+        'FontSize', 9, 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'left');
+end
+xlabel('True airspeed (m/s)'); ylabel('Electrical power (W)');
+title('Electrical power available and required');
+legend('Location', 'best');
+xlim([V_S - 0.03*(V_sweep(end)-V_S), V_sweep(end)]);
 
 %% ---- Outputs ----
 outputs.CruisePerformance = struct('V', V_sweep, 'T_avail', T_avail, 'T_req', T_req, 'V_max_level', V_max_level, ...

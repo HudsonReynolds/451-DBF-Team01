@@ -29,6 +29,17 @@ V_S_computed = sqrt(2*MTOW/(rho*S*params.aero.CL_max));
 fprintf('  1. Stall speed V_S:        assumed (Excel) = %.2f m/s   computed (self-consistent) = %.2f m/s   delta = %.2f m/s\n', ...
     V_S_assumed, V_S_computed, V_S_computed - V_S_assumed);
 
+%% ---- 1b. Cruise speed: A2 design-point formula vs. self-consistent recompute ----
+% Same self-consistency check as item 1, applied to V_C: A2's InitialCalcs.m
+% set V_C = sqrt(2*W_S_design/(rho*CL_C)) from the early design-point wing
+% loading, before the aircraft's final MTOW/S_wing existed. Recomputed here
+% with the FINAL, converged MTOW and S_wing (same CL_C) to check whether
+% that early design point still matches the aircraft as actually sized.
+V_C_assumed = params.performance.V_C;
+V_C_computed = sqrt(2*MTOW/(rho*S*params.aero.CL_C));
+fprintf('  1b. Cruise speed V_C:      assumed (A2 design point) = %.2f m/s   computed (self-consistent, final MTOW/S) = %.2f m/s   delta = %.2f m/s\n', ...
+    V_C_assumed, V_C_computed, V_C_computed - V_C_assumed);
+
 %% ---- 2-3. Propeller efficiency: A2 design value vs. computed from the prop table ----
 % Evaluated at full throttle (the only condition Deliverable 1's
 % RPM_avail_fn directly exposes), at the cruise and take-off airspeeds,
@@ -54,6 +65,21 @@ fprintf('     (Static propulsive efficiency is 0 by definition -- thrust*velocit
 fprintf('     eta_p_TO was never a measurable quantity at the condition its name suggests; A2''s value was a stand-in for the\n');
 fprintf('     whole low-speed take-off roll''s average efficiency, not literally V=0.)\n');
 
+%% ---- 3b. Take-off thrust: A7 sizing target vs. Deliverable 1's computed static thrust ----
+% PropulsionSizing.m's T_static (now saved as params.performance.T_static_design)
+% is the REQUIRED static thrust an early closed-form take-off equation
+% said this motor/prop combo needed to meet S_TO -- the number the
+% propulsion system was actually sized against, before Deliverable 1's
+% detailed torque-balance model (and the lab-measured thrust correction)
+% existed.
+if isfield(params.performance, 'T_static_design')
+    T_static_computed = model.T_avail_fn(0);
+    fprintf('  3b. Take-off thrust:       A7 sizing target (closed-form) = %.2f N   computed (Deliverable 1, static, lab-corrected) = %.2f N   delta = %.2f N\n', ...
+        params.performance.T_static_design, T_static_computed, T_static_computed - params.performance.T_static_design);
+else
+    fprintf('  3b. Take-off thrust:       run PropulsionSizing(params) first to compare against its sizing target.\n');
+end
+
 %% ---- 4. Take-off distance: RFP target vs. Deliverable 2's integrated result ----
 if isfield(params.performance, 'groundRoll_x')
     fprintf('  4. Take-off distance:     RFP limit (S_TO) = %.1f m   computed (Deliverable 2) = %.2f m   margin = %.2f m\n', ...
@@ -61,6 +87,18 @@ if isfield(params.performance, 'groundRoll_x')
 else
     fprintf('  4. Take-off distance:     run TakeoffPerformance(params) first to compare against S_TO.\n');
 end
+
+%% ---- 4b. Parasite drag: no separate early assumption exists to compare against ----
+% A9 asks this be checked like the others (assumed vs. computed), but
+% params.aero.CD_0 has only ever been set one place in this codebase --
+% DragBuildUp.m's component buildup (fuselage + wing + tail + gear) -- at
+% A5. No earlier, independently-guessed CD_0 target exists anywhere in
+% A2's sizing to compare it against (unlike V_S, V_C, or T_static above,
+% each of which has its own separate early-design formula). Reported
+% honestly as "nothing to compare" rather than inventing an early value
+% that was never actually written down.
+fprintf('  4b. Parasite drag CD_0:    no separate early (A2) assumption exists in this codebase -- CD_0 = %.4f has always been\n', params.aero.CD_0);
+fprintf('      DragBuildUp.m''s direct component-buildup result (A5), not an independently-guessed target checked against it here.\n');
 
 %% ---- 5. Maximum level speed: A7/A8's analytic estimate vs. A9's refined model ----
 if isfield(params.performance, 'V_max_level_A8')
@@ -125,6 +163,7 @@ fprintf('     A future bench run would need motor-phase voltage or a verified ES
 
 %% ---- Outputs ----
 outputs.AssumptionValidation = struct('V_S_assumed', V_S_assumed, 'V_S_computed', V_S_computed, ...
+    'V_C_assumed', V_C_assumed, 'V_C_computed', V_C_computed, ...
     'eta_p_C_assumed', params.prop.eta_p_C, 'eta_p_C_computed', eta_prop_cruise, ...
     'eta_p_TO_assumed', params.prop.eta_p_TO, 'eta_p_TO_computed', eta_prop_TO, ...
     'RPM_peak', RPM_peak, 'RPM_lim', model.RPM_lim, 'ok_RPM', ok_RPM, ...
