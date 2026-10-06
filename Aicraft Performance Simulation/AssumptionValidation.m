@@ -88,11 +88,47 @@ ok_RPM = RPM_peak <= model.RPM_lim + 1; % +1 rpm floating-point slack
 fprintf('  7. Structural RPM limit:   RPM_lim = %.0f RPM (145000/D_in)   peak commanded across 0-40 m/s = %.0f RPM   -- %s\n', ...
     model.RPM_lim, RPM_peak, local_ternary(ok_RPM, 'never exceeded (verified)', 'EXCEEDED -- check model.RPM_lim clamp'));
 
+%% ---- 8. Propeller static thrust: APC table vs. the team's own prop-stand lab data ----
+% PropulsionDragModel.m already applies this correction to every Ct
+% lookup (system-wide, per team decision); this item is the evidence
+% behind that correction, assumed-vs-measured style like items 1-6.
+labCal = model.labCal;
+fprintf('  8. Propeller static thrust (lab vs. APC table, %d usable throttle plateaus):\n', numel(labCal.RPM));
+for k = 1:numel(labCal.RPM)
+    fprintf('       RPM=%5.0f   Ct: APC=%.4f  measured=%.4f (%+.1f%%)   Cp: APC=%.4f  measured=%.4f (%+.1f%%)\n', ...
+        labCal.RPM(k), labCal.Ct_apc(k), labCal.Ct_meas(k), labCal.Ct_pctDiff(k), ...
+        labCal.Cp_apc(k), labCal.Cp_meas(k), labCal.Cp_pctDiff(k));
+end
+fprintf('     Cp (shaft power demand) matches the table closely -- no correction. Ct (thrust) is consistently below\n');
+fprintf('     the table and gets worse at lower RPM -- a system-wide, RPM-dependent correction is now applied to\n');
+fprintf('     every Ct lookup in PropulsionDragModel.m (held flat outside the %.0f-%.0f RPM tested range).\n', ...
+    min(labCal.RPM), max(labCal.RPM));
+
+%% ---- 9. Motor electrical constants: could not be calibrated from the lab bench data ----
+% Not a comparison -- a documented limitation. Two reasonable regressions
+% were attempted against the same prop-stand data used for item 8 above
+% and both returned physically impossible motor parameters, so the
+% nameplate Kv/I0/R_motor (SizingParams.xlsx) are kept rather than
+% replaced with a fit that fits noise, not the motor.
+fprintf('  9. Motor electrical constants (Kv, I0, R_motor): attempted lab calibration, NOT applied --\n');
+fprintf('     the bench logs battery-side Voltage/Current (voltage RISES as throttle drops, i.e. battery\n');
+fprintf('     internal-resistance sag, not motor back-EMF -- these are not motor-phase values), and there is no\n');
+fprintf('     logged ESC duty-cycle channel to convert one to the other.\n');
+fprintf('       Attempt A (raw battery V/I as motor V/I):            R_motor fit = 0.242 ohm  (nameplate 0.029 ohm, 8x off)\n');
+fprintf('                                                              I0 fit = -6.01 A  (negative -- physically impossible)\n');
+fprintf('       Attempt B (duty-corrected, assumed std. 1000-2000us): R_motor fit = -0.011 ohm (negative -- physically impossible)\n');
+fprintf('                                                              I0 fit = 6.70 A   (nameplate 1.39 A, 5x off)\n');
+fprintf('     Both attempts fit the torque-vs-current data well (R^2 > 0.99) but the voltage equation is unidentifiable\n');
+fprintf('     from battery-side-only telemetry -- nameplate Kv=%.0f RPM/V, I0=%.2f A, R_motor=%.3f ohm are kept.\n', ...
+    params.prop.Kv, params.prop.I0, params.prop.R_motor);
+fprintf('     A future bench run would need motor-phase voltage or a verified ESC duty-cycle curve to calibrate these.\n');
+
 %% ---- Outputs ----
 outputs.AssumptionValidation = struct('V_S_assumed', V_S_assumed, 'V_S_computed', V_S_computed, ...
     'eta_p_C_assumed', params.prop.eta_p_C, 'eta_p_C_computed', eta_prop_cruise, ...
     'eta_p_TO_assumed', params.prop.eta_p_TO, 'eta_p_TO_computed', eta_prop_TO, ...
-    'RPM_peak', RPM_peak, 'RPM_lim', model.RPM_lim, 'ok_RPM', ok_RPM);
+    'RPM_peak', RPM_peak, 'RPM_lim', model.RPM_lim, 'ok_RPM', ok_RPM, ...
+    'propLabCal', labCal, 'motorCal_applied', false);
 
 end
 

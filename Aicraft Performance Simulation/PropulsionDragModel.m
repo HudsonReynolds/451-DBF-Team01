@@ -82,6 +82,40 @@ R_prop = D_prop/2;
 
 RPM_lim = 145000 / (D_prop/IN2M); % propeller structural speed limit (same formula as PropulsionSizing.m)
 
+%% ---- Thrust correction from the team's own prop-stand lab data ----
+% The team ran a static bench test (Lab Documents/Prop Test Lab/
+% PropLabExcelData.xlsx) on the actual motor+ESC+battery+prop, stepping
+% the ESC signal through 5 plateaus and logging Voltage, Current, RPM,
+% Torque and Thrust at each. That data was checked against two different
+% things this model assumes, with very different results:
+%
+%   - Measured Cp (shaft power coefficient, from directly-measured Torque
+%     and RPM -- no electrical ambiguity) matches the APC table (prop
+%     variable below) to within -2% to +7% at all 4 usable plateaus: the
+%     published power-vs-RPM curve is confirmed, no correction needed.
+%   - Measured Ct (thrust coefficient, from directly-measured Thrust and
+%     RPM) is consistently 12-24% BELOW the APC table at the same RPM,
+%     growing worse at lower RPM -- the real installed prop produces
+%     measurably less static thrust than the manufacturer's published
+%     curve says it should. Applied system-wide below (team decision: the
+%     shortfall is treated as a property of the physical prop/hub/
+%     installation, not an artifact specific to the static test stand,
+%     since the bench test cannot distinguish the two and the team chose
+%     the conservative reading).
+%
+% The motor's own electrical constants (Kv, I0, R_motor) were ALSO
+% checked against this data and could NOT be calibrated from it: the
+% bench logs battery-side Voltage/Current (confirmed by voltage RISING as
+% throttle drops -- battery internal-resistance sag, not motor back-EMF
+% behaviour), not motor-phase values, and there is no logged ESC duty-
+% cycle channel to convert one to the other. Two reasonable attempts
+% (raw battery V/I as motor V/I; duty-corrected assuming the standard
+% 1000-2000us RC convention, itself only confirmed by the idle plateau
+% landing exactly at 1000us) both returned unphysical motor resistance
+% (8x nameplate, then negative) -- reported in AssumptionValidation.m
+% item 8 as a data-insufficiency finding, nameplate Kv/I0/R_motor kept.
+[Ct_corr_fn, labCal] = local_propThrustCorrection(prop, rho, D_prop);
+
 throttle_grid = (0.10:0.05:1.00)'; % commanded throttle fraction of battery voltage; below ~10% the motor can't reliably overcome I0, so the grid starts there
 V_grid = linspace(0, 40, 81); % m/s, same upper bound as PropulsionSizing.m's own sweep
 
@@ -123,7 +157,8 @@ for i = 1:nT
         r = prop.query(RPM_final, V_mph);
         if ~r.inRange, continue, end % outside the tabulated envelope at the capped RPM too -- still no result
         n_rps = RPM_final/60; omega = 2*pi*n_rps;
-        T = r.Ct * rho * n_rps^2 * D_prop^4;
+        Ct_corrected = r.Ct * Ct_corr_fn(RPM_final); % lab-measured static thrust shortfall, see above
+        T = Ct_corrected * rho * n_rps^2 * D_prop^4;
         P_shaft = r.Cp * rho * n_rps^3 * D_prop^5;
         I = P_shaft/(Kt*omega) + params.prop.I0;
         P_elec = (omega*Kt*I + I^2*params.prop.R_motor) / params.prop.eta_ESC;
@@ -260,6 +295,10 @@ fprintf('  \nPropulsion model: APC prop table (%s) + motor torque balance (Kv=%.
     params.prop.prop_file, params.prop.Kv, params.prop.I0, params.prop.R_motor);
 fprintf('  \nMaximum shaft speed: structural limit 145000/D_in = %.0f RPM (D = %.1f in); torque-balance equilibrium is capped there when it would exceed it.\n', ...
     RPM_lim, D_prop/IN2M);
+fprintf('  \nProp-stand lab calibration (Lab Documents/Prop Test Lab/PropLabExcelData.xlsx): measured Cp matched the APC table\n');
+fprintf('      (%+.1f%% to %+.1f%% across %d usable throttle plateaus) -- no correction. Measured Ct ran %.1f%% to %.1f%% BELOW\n', ...
+    min(labCal.Cp_pctDiff), max(labCal.Cp_pctDiff), numel(labCal.RPM), min(labCal.Ct_pctDiff), max(labCal.Ct_pctDiff));
+fprintf('      the table at the same RPM -- a %s thrust correction is now applied to every static/flight Ct lookup below.\n', 'system-wide, RPM-dependent');
 fprintf('  \nLanding-gear drag: CD_0_gear / CD_0 = %.1f%% of parasite drag, summed once into CD_0_comp (DragBuildUp.m) and never re-added downstream.\n', 100*gear_fraction_of_CD0);
 fprintf('  \nUsable battery energy fraction used throughout: useableCapacity=%.0f%% x temp_derate=%.0f%% = %.0f%% of the nominal pack.\n', ...
     100*params.prop.useableCapacity, 100*params.prop.temp_derate, 100*params.prop.useableCapacity*params.prop.temp_derate);
@@ -279,7 +318,8 @@ model = struct( ...
     'V_grid', V_grid, 'throttle_grid', throttle_grid, ...
     'T_avail_fn', T_avail_fn, 'Pelec_avail_fn', Pelec_avail_fn, 'I_avail_fn', I_avail_fn, 'throttle_cap_fn', throttle_cap_fn, 'RPM_avail_fn', RPM_avail_fn, ...
     'T_grid_fn', T_grid_fn, 'Pelec_grid_fn', Pelec_grid_fn, 'I_grid_fn', I_grid_fn, 'find_throttle_for_thrust', find_throttle_for_thrust, ...
-    'P_cap', P_cap, 'I_cap', I_cap, 'throttle_bound', throttle_bound);
+    'P_cap', P_cap, 'I_cap', I_cap, 'throttle_bound', throttle_bound, ...
+    'Ct_corr_fn', Ct_corr_fn, 'labCal', labCal);
 
 params.prop.model = model; % the reusable propulsion model every other A9 script queries
 
@@ -316,6 +356,76 @@ function tau = local_findThrottleForThrust(V, T_req, throttle_grid, T_grid_fn)
             end
         end
     end
+end
+
+function [Ct_corr_fn, labCal] = local_propThrustCorrection(prop, rho, D_prop)
+    % Builds an RPM-dependent Ct correction factor k(RPM) = Ct_measured /
+    % Ct_APC from the team's static prop-stand bench data, and returns it
+    % as a griddedInterpolant ('linear' between the tested RPMs, 'nearest'
+    % -- i.e. held flat -- outside them, same convention as every other
+    % interpolant this file builds) so a single Ct_corr_fn(RPM) call
+    % multiplies onto the APC table's Ct wherever it's queried above.
+    labFile = fullfile('Lab Documents', 'Prop Test Lab', 'PropLabExcelData.xlsx');
+    warnState = warning('off', 'MATLAB:table:ModifiedAndSavedVarnames');
+    raw = readtable(labFile, 'Sheet', 'Sheet1');
+    warning(warnState);
+
+    esc    = raw.ESCSignal__s_;
+    RPMcol = raw.MotorElectricalSpeed_RPM_;
+    Tqcol  = raw.Torque_N_m_;
+    Thcol  = raw.Thrust_kgf_;
+    Icol   = raw.Current_A_;
+
+    % The ESC signal steps through discrete plateaus (full throttle down
+    % to idle); segment on where it changes, same logic as a square wave.
+    breaks = find(diff(esc) ~= 0);
+    starts = [1; breaks+1];
+    ends   = [breaks; numel(esc)];
+
+    RPM_pts = []; Ct_meas_pts = []; Ct_apc_pts = []; Cp_meas_pts = []; Cp_apc_pts = [];
+    for p = 1:numel(starts)
+        s = starts(p); e = ends(p);
+        n = e - s + 1;
+        skip = round(0.25*n); % drop the first quarter of each plateau to let RPM/current settle
+        s2 = s + skip;
+
+        I_mean = mean(Icol(s2:e), 'omitnan');
+        if I_mean < 0.5, continue, end % idle/degenerate plateau (no load) -- not a usable operating point
+
+        RPM_mean = mean(RPMcol(s2:e), 'omitnan');
+        Tq_mean  = mean(Tqcol(s2:e), 'omitnan');
+        Th_mean  = mean(Thcol(s2:e), 'omitnan') * 9.81; % kgf -> N
+
+        n_rps = RPM_mean/60;
+        Ct_meas = Th_mean / (rho * n_rps^2 * D_prop^4);
+        Cp_meas = (Tq_mean * 2*pi*n_rps) / (rho * n_rps^3 * D_prop^5);
+
+        r = prop.query(RPM_mean, 0);
+        if ~r.inRange || r.Ct <= 0, continue, end
+
+        RPM_pts(end+1)     = RPM_mean;     %#ok<AGROW>
+        Ct_meas_pts(end+1) = Ct_meas;       %#ok<AGROW>
+        Ct_apc_pts(end+1)  = r.Ct;          %#ok<AGROW>
+        Cp_meas_pts(end+1) = Cp_meas;       %#ok<AGROW>
+        Cp_apc_pts(end+1)  = r.Cp;          %#ok<AGROW>
+    end
+
+    [RPM_pts, order] = sort(RPM_pts);
+    Ct_meas_pts = Ct_meas_pts(order); Ct_apc_pts = Ct_apc_pts(order);
+    Cp_meas_pts = Cp_meas_pts(order); Cp_apc_pts = Cp_apc_pts(order);
+
+    k = Ct_meas_pts ./ Ct_apc_pts;
+    if numel(RPM_pts) >= 2
+        Ct_corr_fn = griddedInterpolant(RPM_pts, k, 'linear', 'nearest');
+    else
+        k_const = 1; if ~isempty(k), k_const = k(1); end
+        Ct_corr_fn = @(rpm) k_const * ones(size(rpm)); % not enough lab points to interpolate -- hold the single measured ratio flat
+    end
+
+    labCal = struct('RPM', RPM_pts, 'Ct_meas', Ct_meas_pts, 'Ct_apc', Ct_apc_pts, ...
+        'Ct_pctDiff', 100*(Ct_meas_pts-Ct_apc_pts)./Ct_apc_pts, ...
+        'Cp_meas', Cp_meas_pts, 'Cp_apc', Cp_apc_pts, ...
+        'Cp_pctDiff', 100*(Cp_meas_pts-Cp_apc_pts)./Cp_apc_pts);
 end
 
 function y = local_fillInteriorNaN(y)
