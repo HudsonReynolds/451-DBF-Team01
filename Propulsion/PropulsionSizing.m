@@ -39,7 +39,7 @@ RPM_eq = fzero(Qres, [1000, RPM_high]); % Equilibrium motor speed [RPM]
 
 % Determine motor operating speeds
 RPM_lim = 145000 / (D / IN2M); % Propeller structural speed limit
-RPM_max = min(RPM_eq, RPM_lim); % 100% throttle RPM
+RPM_max = min(RPM_eq, RPM_lim) % 100% throttle RPM
 throttle_settings = [0.25 0.5 0.75 1];
 
 % Get propeller data
