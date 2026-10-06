@@ -205,7 +205,13 @@ end
 %% ---- Plot: all 8 checks against payload, 2x4 panels ----
 blue = [0.00 0.45 0.74]; orange = [0.85 0.33 0.10]; red = [0.80 0.00 0.00]; gray = [0.3 0.3 0.3]; purple = [0.49 0.18 0.56];
 
-xlim_pad = [0, W_pay_grid(end)*1.02];
+% Displayed x-axis ends at the R22 MTOW-cap payload (a tiny margin past
+% it so that line doesn't sit flush on the right edge, invisible behind
+% the axis spine) -- the sweep itself still computes well past that
+% point (W_pay_grid goes wider, per the team's earlier request) so every
+% quantity's own crossing is still found accurately even when it falls
+% beyond R22; this only trims what's drawn, not what's computed.
+xlim_pad = [0, W_pay_at_MTOWcap*1.03];
 
 % No explicit 'Position' here -- Setup.m already sets every figure to
 % dock by default, and combining 'WindowStyle','docked' with an explicit
