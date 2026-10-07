@@ -2,7 +2,6 @@
 function params = StressMargins(params)
 
 %% Loads
-% Magnitudes only: sign gives load direction, but the stress checks use the worst side
 ult_factor = 1.5;
 M_wing_ult = abs(params.structures.wing_M_driving) * ult_factor;
 V_wing_ult = abs(params.structures.wing_V_driving) * ult_factor;
