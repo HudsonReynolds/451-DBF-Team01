@@ -36,11 +36,7 @@ ServoSizing(params);
 
 params = PropulsionSizing(params);
 
-PropellerCharacterization(params);
-
-figs_before_preview = findall(0, 'Type', 'figure');
-evalc('[~, params] = PropulsionDragModel(params); [~, params] = CruisePerformance(params);');
-delete(setdiff(findall(0, 'Type', 'figure'), figs_before_preview));
+PropellerCharacterization(params); 
 
 fprintf('\n========================================\n');
 fprintf('  STRUCTURES (A8, Deliverables 2-4)\n');
@@ -57,8 +53,6 @@ VnOperatingEnvelope(params);
 [~, params] = FuselageLoads(params);
 
 [~, params] = TailDraggerTakeOff(params);
-
-params = StressMargins(params);
 
 fprintf('\n========================================\n');
 fprintf('  AIRCRAFT PERFORMANCE (A9, Deliverables 1-5)\n');
@@ -85,15 +79,16 @@ fprintf('========================================\n');
 [~, params] = MaxPayloadSweep(params);
 
 [~, params] = RequirementsValidation(params);
- 
-
+% 
 % Save every figure generated above into Plots/, replacing whatever was
 % there before -- so Plots/ always matches exactly this run's figures.
 % ExportAllFigures('Plots');
 
 writeOutputs(params, "SizingParams.xlsx");
 
-% Save every figure generated above into Plots/, replacing whatever was
-% there before -- so Plots/ always matches exactly this run's figures.
-% ExportAllFigures('Plots');
-
+% <<<<<<< Updated upstream
+% =======
+% % Save every figure generated above into Plots/, replacing whatever was
+% % there before -- so Plots/ always matches exactly this run's figures.
+% % ExportAllFigures('Plots');
+% >>>>>>> Stashed changes
