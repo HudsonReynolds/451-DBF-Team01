@@ -28,6 +28,11 @@ V_S_assumed = params.performance.V_S;
 V_S_computed = sqrt(2*MTOW/(rho*S*params.aero.CL_max));
 fprintf('  1. Stall speed V_S:        assumed (Excel) = %.2f m/s   computed (self-consistent) = %.2f m/s   delta = %.2f m/s\n', ...
     V_S_assumed, V_S_computed, V_S_computed - V_S_assumed);
+fprintf('      Affects: V_TO = mult_V_TO x V_S (InitialCalcs.m runs before this self-consistent value exists, so\n');
+fprintf('      Deliverables 2-6''s baseline V_TO still derives from the ASSUMED V_S, not this one -- Deliverable 8''s\n');
+fprintf('      sweep DOES refresh V_S self-consistently per candidate). Re-run needed: not currently done; delta is\n');
+fprintf('      small (%.1f%%) so the effect is minor, but strictly the baseline V_TO/CL_R are off this self-consistent value.\n', ...
+    100*(V_S_computed-V_S_assumed)/V_S_assumed);
 
 %% ---- 1b. Cruise speed: A2 design-point formula vs. self-consistent recompute ----
 % Same self-consistency check as item 1, applied to V_C: A2's InitialCalcs.m
@@ -39,6 +44,10 @@ V_C_assumed = params.performance.V_C;
 V_C_computed = sqrt(2*MTOW/(rho*S*params.aero.CL_C));
 fprintf('  1b. Cruise speed V_C:      assumed (A2 design point) = %.2f m/s   computed (self-consistent, final MTOW/S) = %.2f m/s   delta = %.2f m/s\n', ...
     V_C_assumed, V_C_computed, V_C_computed - V_C_assumed);
+fprintf('      Affects: MissionSimulation.m''s straight-leg speed/power/energy and TurnPerformance.m''s lap speed both\n');
+fprintf('      use the ASSUMED V_C directly, not this self-consistent value. Re-run needed: recommended -- an %.1f%%\n', ...
+    100*(V_C_computed-V_C_assumed)/V_C_assumed);
+fprintf('      speed change shifts mission energy per lap meaningfully; the team should decide whether to adopt it.\n');
 
 %% ---- 2-3. Propeller efficiency: A2 design value vs. computed from the prop table ----
 % Evaluated at full throttle (the only condition Deliverable 1's
@@ -59,11 +68,15 @@ end
 
 fprintf('  2. Prop efficiency (cruise): assumed eta_p_C = %.3f   computed (full throttle, V_C=%.1f m/s) = %.3f   delta = %.3f\n', ...
     params.prop.eta_p_C, V_C, eta_prop_cruise, eta_prop_cruise - params.prop.eta_p_C);
+fprintf('      Affects: nothing downstream -- eta_p_C was only ever an A2-era sizing input (VehicleWeightEstimation.m,\n');
+fprintf('      InitialVehicleSizingConstraint.m), already fully superseded by Deliverable 1''s torque-balance model,\n');
+fprintf('      which every A9 script uses instead. Re-run needed: no.\n');
 fprintf('  3. Prop efficiency (take-off): assumed eta_p_TO = %.3f   computed (static, V=0) = %.3f   delta = %.3f\n', ...
     params.prop.eta_p_TO, eta_prop_TO, eta_prop_TO - params.prop.eta_p_TO);
 fprintf('     (Static propulsive efficiency is 0 by definition -- thrust*velocity is 0 at V=0 no matter the shaft power -- so\n');
 fprintf('     eta_p_TO was never a measurable quantity at the condition its name suggests; A2''s value was a stand-in for the\n');
 fprintf('     whole low-speed take-off roll''s average efficiency, not literally V=0.)\n');
+fprintf('      Affects: nothing downstream, same reason as item 2. Re-run needed: no.\n');
 
 %% ---- 3b. Take-off thrust: A7 sizing target vs. Deliverable 1's computed static thrust ----
 % PropulsionSizing.m's T_static (now saved as params.performance.T_static_design)
@@ -76,6 +89,9 @@ if isfield(params.performance, 'T_static_design')
     T_static_computed = model.T_avail_fn(0);
     fprintf('  3b. Take-off thrust:       A7 sizing target (closed-form) = %.2f N   computed (Deliverable 1, static, lab-corrected) = %.2f N   delta = %.2f N\n', ...
         params.performance.T_static_design, T_static_computed, T_static_computed - params.performance.T_static_design);
+    fprintf('      Affects: none -- the selected motor/prop already EXCEEDS the A7 sizing target (computed > assumed),\n');
+    fprintf('      so the trade selection remains valid; a smaller motor could in principle still meet it, but that''s\n');
+    fprintf('      not required. Re-run needed: no.\n');
 else
     fprintf('  3b. Take-off thrust:       run PropulsionSizing(params) first to compare against its sizing target.\n');
 end
@@ -84,6 +100,7 @@ end
 if isfield(params.performance, 'groundRoll_x')
     fprintf('  4. Take-off distance:     RFP limit (S_TO) = %.1f m   computed (Deliverable 2) = %.2f m   margin = %.2f m\n', ...
         params.performance.S_TO, params.performance.groundRoll_x, params.performance.S_TO - params.performance.groundRoll_x);
+    fprintf('      Affects: none -- computed ground roll is well inside the limit with large margin. Re-run needed: no.\n');
 else
     fprintf('  4. Take-off distance:     run TakeoffPerformance(params) first to compare against S_TO.\n');
 end
@@ -99,11 +116,15 @@ end
 % that was never actually written down.
 fprintf('  4b. Parasite drag CD_0:    no separate early (A2) assumption exists in this codebase -- CD_0 = %.4f has always been\n', params.aero.CD_0);
 fprintf('      DragBuildUp.m''s direct component-buildup result (A5), not an independently-guessed target checked against it here.\n');
+fprintf('      Affects: N/A, nothing to compare -- every downstream script already uses this one and only CD_0 value.\n');
 
 %% ---- 5. Maximum level speed: A7/A8's analytic estimate vs. A9's refined model ----
 if isfield(params.performance, 'V_max_level_A8')
     fprintf('  5. Max level speed:       A7/A8 analytic (PropulsionSizing.m) = %.2f m/s   A9 refined (full V-sweep torque balance) = %.2f m/s   delta = %.2f m/s\n', ...
         params.performance.V_max_level_A8, params.performance.V_max_level, params.performance.V_max_level - params.performance.V_max_level_A8);
+    fprintf('      Affects: V_D/V_NE in VnDiagram.m (A8 Structures) -- V_D = max(1.25*V_C, 1.25*V_max_level), and A8''s\n');
+    fprintf('      Structures section runs BEFORE this refined value exists in Main.m''s current script order. Re-run\n');
+    fprintf('      needed: YES -- re-run Structures with the updated V_max_level, or reorder the pipeline, for full consistency.\n');
 else
     fprintf('  5. Max level speed:       run CruisePerformance(params) first to compare against A8''s estimate.\n');
 end
@@ -112,6 +133,11 @@ end
 if isfield(params.performance, 'n_turn')
     fprintf('  6. Load factor n:         structural design (A2, used throughout A8) = %.2f   computed at course radius R_req (Deliverable 5) = %.2f   delta = %.2f\n', ...
         params.performance.n, params.performance.n_turn, params.performance.n_turn - params.performance.n);
+    fprintf('      Affects: every A8 structural load (WingLoads/TailLoads/FuselageLoads/VnDiagram all size to n=%.2f,\n', params.performance.n);
+    fprintf('      not the n=%.2f the course actually demands). Re-run needed: team decision -- if n=%.2f is a deliberate\n', ...
+        params.performance.n_turn, params.performance.n);
+    fprintf('      margin above the real demand, no re-run needed; if R_M should instead match the real course radius\n');
+    fprintf('      R_req, A8 Structures should be re-run (likely giving a lighter, less conservative structure).\n');
 else
     fprintf('  6. Load factor n:         run TurnPerformance(params) first to compare against the design n.\n');
 end
@@ -161,6 +187,44 @@ fprintf('     from battery-side-only telemetry -- nameplate Kv=%.0f RPM/V, I0=%.
     params.prop.Kv, params.prop.I0, params.prop.R_motor);
 fprintf('     A future bench run would need motor-phase voltage or a verified ESC duty-cycle curve to calibrate these.\n');
 
+%% ---- Table figure: the 9 assumed-vs-computed comparisons, one row each ----
+% Items 7-9 above (RPM-limit verification, prop lab calibration, motor
+% calibration attempt) don't fit this table -- they aren't a single
+% assumed-vs-computed pair, they're a check or a multi-point calibration.
+tblRows = { ...
+    'Stall speed V_S (m/s)', sprintf('%.2f', V_S_assumed), sprintf('%.2f', V_S_computed), ...
+        local_pctStr(V_S_assumed, V_S_computed), 'V_TO/CL_R (minor)'; ...
+    'Cruise speed V_C (m/s)', sprintf('%.2f', V_C_assumed), sprintf('%.2f', V_C_computed), ...
+        local_pctStr(V_C_assumed, V_C_computed), 'Mission energy, lap speed'; ...
+    'CD0', 'n/a', sprintf('%.4f', params.aero.CD_0), 'n/a', 'nothing to compare'; ...
+    'Prop efficiency, cruise', sprintf('%.3f', params.prop.eta_p_C), sprintf('%.3f', eta_prop_cruise), ...
+        local_pctStr(params.prop.eta_p_C, eta_prop_cruise), 'none (superseded)'; ...
+    'Prop efficiency, take-off', sprintf('%.3f', params.prop.eta_p_TO), sprintf('%.3f', eta_prop_TO), ...
+        local_pctStr(params.prop.eta_p_TO, eta_prop_TO), 'none (by definition)'; ...
+};
+if exist('T_static_computed', 'var')
+    tblRows(end+1,:) = {'Static thrust (N)', sprintf('%.2f', params.performance.T_static_design), sprintf('%.2f', T_static_computed), ...
+        local_pctStr(params.performance.T_static_design, T_static_computed), 'none (exceeds target)'};
+end
+if isfield(params.performance, 'groundRoll_x')
+    tblRows(end+1,:) = {'Take-off distance (m)', sprintf('%.1f', params.performance.S_TO), sprintf('%.2f', params.performance.groundRoll_x), ...
+        local_pctStr(params.performance.S_TO, params.performance.groundRoll_x), 'none (large margin)'};
+end
+if isfield(params.performance, 'V_max_level_A8')
+    tblRows(end+1,:) = {'Max level speed (m/s)', sprintf('%.2f', params.performance.V_max_level_A8), sprintf('%.2f', params.performance.V_max_level), ...
+        local_pctStr(params.performance.V_max_level_A8, params.performance.V_max_level), 'A8 V_D/V_NE (stale)'};
+end
+if isfield(params.performance, 'n_turn')
+    tblRows(end+1,:) = {'Load factor n', sprintf('%.2f', params.performance.n), sprintf('%.2f', params.performance.n_turn), ...
+        local_pctStr(params.performance.n, params.performance.n_turn), 'A8 structural loads'};
+end
+
+figure('Name', 'Assumption Validation Table', 'Color', 'w', 'WindowStyle', 'docked');
+ax_tbl = axes('Position', [0.03 0.05 0.94 0.85]);
+addDataTable(ax_tbl, {'Quantity', 'Assumed', 'Computed', 'Change', 'Affects'}, tblRows, ...
+    'ColAlign', {'left','right','right','right','left'});
+title('Assumption Validation', 'Interpreter', 'none', 'FontWeight', 'bold');
+
 %% ---- Outputs ----
 outputs.AssumptionValidation = struct('V_S_assumed', V_S_assumed, 'V_S_computed', V_S_computed, ...
     'V_C_assumed', V_C_assumed, 'V_C_computed', V_C_computed, ...
@@ -173,4 +237,12 @@ end
 
 function out = local_ternary(cond, a, b)
     if cond, out = a; else, out = b; end
+end
+
+function s = local_pctStr(assumed, computed)
+    if assumed == 0
+        s = 'n/a';
+    else
+        s = sprintf('%+.1f%%', 100*(computed-assumed)/assumed);
+    end
 end

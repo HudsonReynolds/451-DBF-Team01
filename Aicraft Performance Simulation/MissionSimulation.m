@@ -218,6 +218,8 @@ SOC_pct = 100 * (E_usable - [0, cumsum(seg_E)]) / E_usable;
 i_laps_end = 1 + 3 + N_LAPS; % index into t_points/SOC_pct at the end of the required laps
 
 figure('Name','Mission State of Charge','Color','w','WindowStyle','docked');
+t_layout = tiledlayout(1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
+nexttile(t_layout, [1 2]);
 hold on; box on; grid on;
 
 % Shade each segment and label it along the top, matching A9's example.
@@ -245,6 +247,70 @@ legend('Location', 'southwest');
 xlim([0, t_points(end)]);
 ylim(yl_fixed);
 
+% Compact key-value panel beside the plot, matching the lecture's own
+% example-figure layout. "Energy, N laps" is just the required laps
+% themselves (N_LAPS*E_lap), excluding warm-up/take-off/climb/descent/
+% approach -- distinct from "Whole mission" (E_mission), which includes them.
+addInfoTable(nexttile(t_layout), { ...
+    sprintf('Energy, %d laps', N_LAPS), sprintf('%.2f kJ', N_LAPS*E_lap/1000); ...
+    'Whole mission',  sprintf('%.2f kJ', E_mission/1000); ...
+    'Usable energy',  sprintf('%.1f kJ', E_usable/1000); ...
+    'Energy left',    sprintf('%.1f kJ', energy_left_after_mission/1000); ...
+    'Laps possible',  sprintf('%d', laps_possible)});
+
+%% ---- Segment table, its own figure (matching the lecture's segment-by-
+%% segment table, split into straights/turns per lap rather than one
+%% combined "Lap k" row like the SoC plot's shading above) ----
+tbl_name = {'Warm-up and taxi', 'Ground roll', sprintf('Climb to %.0f m', params.performance.climb_alt)};
+tbl_t    = [t_warmup, t_TO, t_climb];
+tbl_dist = [0, params.performance.groundRoll_x, params.performance.x_climb];
+tbl_P    = [P_cap, P_cap, P_cap];
+% Each lap is TWO straight legs + TWO 180-degree turns (one full circle) --
+% "Lap k straights"/"Lap k turns" below are each the COMBINED pair, same
+% convention E_lap itself already uses (E_lap = 2*P_straight*t_straight +
+% 2*P_turn*t_turn): one leg's time/distance/energy doubled, not one leg
+% alone, so these 2*N_LAPS rows correctly sum to the real per-lap totals.
+for lap = 1:N_LAPS
+    tbl_name = [tbl_name, {sprintf('Lap %d straights', lap)}]; %#ok<AGROW>
+    tbl_t    = [tbl_t, 2*t_straight_leg]; %#ok<AGROW>
+    tbl_dist = [tbl_dist, 2*lap_length]; %#ok<AGROW>
+    tbl_P    = [tbl_P, P_elec_straight]; %#ok<AGROW>
+
+    tbl_name = [tbl_name, {sprintf('Lap %d turns', lap)}]; %#ok<AGROW>
+    tbl_t    = [tbl_t, 2*t_turn_leg]; %#ok<AGROW>
+    tbl_dist = [tbl_dist, 2*pi*R_req]; %#ok<AGROW>
+    tbl_P    = [tbl_P, P_elec_turn]; %#ok<AGROW>
+end
+% Descent distance: same symmetric assumption already used for its
+% duration (t_descent = t_climb) -- the same altitude lost at a comparable
+% rate covers the same horizontal distance. Approach has no speed/distance
+% model anywhere upstream (same reasoning that kept its power at 0, not an
+% invented nonzero value) -- shown as "n/a" rather than a fabricated number.
+tbl_name = [tbl_name, {'Descent', 'Approach and landing'}];
+tbl_t    = [tbl_t, t_descent, t_approach];
+tbl_dist = [tbl_dist, params.performance.x_climb, NaN];
+tbl_P    = [tbl_P, 0, 0];
+
+tbl_E_Wh = tbl_P .* tbl_t / 3600; % W*s -> Wh
+tbl_SOC  = 100 * (E_usable - cumsum(tbl_E_Wh*3600)) / E_usable;
+
+nSegRows = numel(tbl_name);
+tblData = cell(nSegRows, 6);
+for i = 1:nSegRows
+    if isnan(tbl_dist(i))
+        distStr = 'n/a';
+    else
+        distStr = sprintf('%.0f', tbl_dist(i));
+    end
+    tblData(i,:) = {tbl_name{i}, sprintf('%.1f', tbl_t(i)), distStr, ...
+        sprintf('%.0f', tbl_P(i)), sprintf('%.3f', tbl_E_Wh(i)), sprintf('%.1f', tbl_SOC(i))};
+end
+
+figure('Name', 'Mission Simulation Table', 'Color', 'w', 'WindowStyle', 'docked');
+ax_tbl = axes('Position', [0.03 0.05 0.94 0.85]);
+addDataTable(ax_tbl, {'Segment', 'Time (s)', 'Distance (m)', 'Electrical power (W)', 'Energy (Wh)', 'SoC (%)'}, tblData);
+title(sprintf('Mission Simulation -- Segment Table (%d laps)', N_LAPS), 'Interpreter', 'none', 'FontWeight', 'bold');
+
 %% ---- Outputs ----
 outputs.MissionSimulation = struct('N_LAPS', N_LAPS, 't_warmup', t_warmup, 'E_warmup', E_warmup, ...
     't_TO', t_TO, 'E_TO', E_TO, 't_climb', t_climb, 'E_climb', E_climb, ...
@@ -263,6 +329,7 @@ params.performance.mission_t = t_mission;
 params.performance.mission_E = E_mission;
 params.performance.mission_ok_energy = ok_energy;
 params.performance.mission_ok_power = ok_power_limit;
+params.performance.mission_P_peak = P_peak; % needed by RequirementsValidation.m's data table (R21's actual value, not just pass/fail)
 params.performance.mission_laps_possible = laps_possible;
 params.performance.mission_E_left = energy_left_after_mission;
 params.performance.mission_battery_mass_left_kg = battery_mass_left_kg;

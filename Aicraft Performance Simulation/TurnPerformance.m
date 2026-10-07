@@ -40,7 +40,12 @@ end
 %% ---- Power required at this turn vs. power available ----
 q = 0.5*rho*V_M^2;
 CL_turn = n_turn*MTOW/(q*S);
-stall_margin_ok = CL_turn <= params.aero.CL_max;
+% Stall-margined limit, not raw CL_max -- same convention CL_R already
+% uses at rotation (InitialCalcs.m) and MaxPayloadSweep.m's own turn check
+% (Deliverable 8) already applies to this identical physical quantity;
+% matches the lecture's explicit CL <= CL_max/1.2^2 for the turn.
+CL_turn_limit = params.aero.CL_max / params.performance.mult_V_TO^2;
+stall_margin_ok = CL_turn <= CL_turn_limit;
 CD_turn = model.CD_trim_fn(CL_turn);
 D_turn = q*S*CD_turn;
 T_req_turn = D_turn; % coordinated level turn: thrust balances drag, same as level flight
@@ -63,13 +68,14 @@ else
     end
 end
 
-fprintf('  CL in the turn = %.3f (CL_max = %.3f) -- %s\n', CL_turn, params.aero.CL_max, local_ternary(stall_margin_ok, 'within stall margin', 'EXCEEDS CL_max, turn not achievable as modelled'));
+fprintf('  CL in the turn = %.3f (stall-margined limit = %.3f, CL_max = %.3f) -- %s\n', ...
+    CL_turn, CL_turn_limit, params.aero.CL_max, local_ternary(stall_margin_ok, 'within stall margin', 'EXCEEDS the stall-margined limit, turn not achievable as modelled'));
 fprintf('  Power required: %.1f W electrical (%.1f W aerodynamic) vs. %.1f W available at %.2f m/s -- %s\n', ...
     P_req_elec_turn, P_req_aero_turn, P_avail_elec_turn, V_M, local_ternary(ok_power && stall_margin_ok, 'PASS', 'FAIL'));
 
 %% ---- Outputs ----
 outputs.TurnPerformance = struct('R_req', R_req, 'V_M', V_M, 'n_turn', n_turn, 'bank_turn_deg', bank_turn_deg, ...
-    'CL_turn', CL_turn, 'stall_margin_ok', stall_margin_ok, ...
+    'CL_turn', CL_turn, 'CL_turn_limit', CL_turn_limit, 'stall_margin_ok', stall_margin_ok, ...
     'P_req_aero_turn', P_req_aero_turn, 'P_req_elec_turn', P_req_elec_turn, 'P_avail_elec_turn', P_avail_elec_turn, ...
     'ok_power', ok_power && stall_margin_ok);
 
