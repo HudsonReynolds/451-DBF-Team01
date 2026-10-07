@@ -13,7 +13,7 @@ M_fuselage_ult  = params.structures.fuselage_M_envelope_max * ult_factor;
 V_fuselage_ult  = params.structures.fuselage_V_envelope_max * ult_factor;
 T_fuselage_ult  = params.structures.tailcone_T * ult_factor; 
 
-F_landing_ult = (params.structures.landing_F_main + params.structures.landing_F_tailwheel) * ult_factor;
+F_landing_ult = (params.structures.landing_F_main) * ult_factor;
 
 %% Wing spar
 % Dimensions
@@ -37,7 +37,7 @@ y_max_spar = height_spar_out / 2;
 sigma_bend_spar = (M_wing_ult * y_max_spar) / I_spar;
 
 % Torsional shear stress (thin walled tube)
-A_m_spar = (width_spar_out - wall_thick_spar) * (spar_height_out - wall_thick_spar); 
+A_m_spar = (width_spar_out - wall_thick_spar) * (height_spar_out - wall_thick_spar); 
 tau_torsion_spar = T_wing_ult / (2 * A_m_spar * wall_thick_spar);
 
 % Von-Mises stress
@@ -118,11 +118,11 @@ params.structures.MoS_fuselage_shear = (fuselage_fa / tau_combined_fuselage) - 1
 
 %% Landing gear
 % Dimensions
-gear_strut_length = params.structures.gear_strut_length;
-gear_strut_width_max = params.structure.gear_strut_width_max;
-gear_strut_width_min = params.structure.gear_strut_width_min;
-gear_strut_thickness = params.structure.gear_strut_thickness;
-gear_strut_angle = params.structure.gear_strut_angle;
+gear_strut_length = params.geometry.gear_strut_length;
+gear_strut_width_max = params.geometry.gear_strut_width_max;
+gear_strut_width_min = params.geometry.gear_strut_width_min;
+gear_strut_thickness = params.geometry.gear_strut_thickness;
+gear_strut_angle = params.geometry.gear_strut_angle;
 
 % Material properties
 gear_fty = params.materials.fty_al_6061_t6 * 10^6;
@@ -141,8 +141,11 @@ sigma_bend_gear = (M_gear * y_max_gear) / I_gear;
 A_strut_min = gear_strut_width_min * gear_strut_thickness;
 sigma_comp_gear = P_comp / A_strut_min;
 
+% Shear stress
+
+
 % Von-Mises stress
-sigma_vm_gear = sqrt(sigma_bend_gear^2 - sigma_bend_gear * sigma_comp_gear + sigma_comp_gear^2);
+sigma_total = sigma_bend_gear + sigma_comp_gear;
 
 % Gear margins
 params.structures.MoS_gear_vm = (gear_fty / sigma_vm_gear) - 1;

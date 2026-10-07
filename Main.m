@@ -54,6 +54,8 @@ VnOperatingEnvelope(params);
 
 [~, params] = TailDraggerTakeOff(params);
 
+params = StressMargins(params);
+
 fprintf('\n========================================\n');
 fprintf('  AIRCRAFT PERFORMANCE (A9, Deliverables 1-5)\n');
 fprintf('========================================\n');
