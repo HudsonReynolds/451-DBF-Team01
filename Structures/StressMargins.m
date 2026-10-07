@@ -1,4 +1,3 @@
-% A8 Deliverables 5 and 6
 function params = StressMargins(params)
 
 %% Loads
@@ -19,7 +18,7 @@ F_landing_ult = abs(params.structures.landing_F_main) * ult_factor;
 
 %% Wing spar
 % Dimensions
-width_spar_out  = params.geometry.width_spar;
+width_spar_out = params.geometry.width_spar;
 height_spar_out = params.geometry.width_spar;
 wall_thick_spar = params.geometry.wall_thick_spar;
 
@@ -50,13 +49,20 @@ sigma_vm_spar = sqrt(sigma_bend_spar^2 + 3 * tau_torsion_spar^2);
 % Max shear stress on one side wall
 tau_spar_max = tau_shear_spar + tau_torsion_spar;
 
+% Store stresses [MPa]
+params.structures.sigma_bend_spar = sigma_bend_spar / 1e6;
+params.structures.tau_shear_spar = tau_shear_spar / 1e6;
+params.structures.tau_torsion_spar = tau_torsion_spar / 1e6;
+params.structures.sigma_vm_spar = sigma_vm_spar / 1e6;
+params.structures.tau_spar_max = tau_spar_max / 1e6;
+
 % Wing spar margins
 params.structures.MoS_spar_vm = (spar_fty / sigma_vm_spar) - 1;
 params.structures.MoS_spar_shear = (spar_fsu / tau_spar_max) - 1;
 
 %% Tail boom
 % Dimensions
-width_tail_boom_out  = params.geometry.width_tail_boom;
+width_tail_boom_out = params.geometry.width_tail_boom;
 height_tail_boom_out = params.geometry.width_tail_boom;
 wall_thick_tail_boom = params.geometry.wall_thick_tail_boom;
 
@@ -86,6 +92,13 @@ sigma_vm_tail_boom = sqrt(sigma_bend_tail_boom^2 + 3 * tau_torsion_tail_boom^2);
 
 % Max shear stress on one side wall
 tau_tail_boom_max = tau_shear_tail_boom + tau_torsion_tail_boom;
+
+% Store stresses [MPa]
+params.structures.sigma_bend_tail_boom = sigma_bend_tail_boom / 1e6;
+params.structures.tau_shear_tail_boom = tau_shear_tail_boom / 1e6;
+params.structures.tau_torsion_tail_boom = tau_torsion_tail_boom / 1e6;
+params.structures.sigma_vm_tail_boom = sigma_vm_tail_boom / 1e6;
+params.structures.tau_tail_boom_max = tau_tail_boom_max / 1e6;
 
 % Tail boom margins
 params.structures.MoS_tail_boom_vm = (tail_boom_fty / sigma_vm_tail_boom) - 1;
@@ -120,6 +133,12 @@ tau_torsion_fuselage = T_fuselage_ult / (2 * A_m_fuselage * wall_thick_fuselage)
 
 % Max shear stress on one side wall
 tau_combined_fuselage = tau_torsion_fuselage + tau_shear_fuselage;
+
+% Store stresses [MPa]
+params.structures.sigma_bend_fuselage = sigma_bend_fuselage / 1e6;
+params.structures.tau_shear_fuselage = tau_shear_fuselage / 1e6;
+params.structures.tau_torsion_fuselage = tau_torsion_fuselage / 1e6;
+params.structures.tau_combined_fuselage = tau_combined_fuselage / 1e6;
 
 % Fuselage margins
 params.structures.MoS_fuselage_bend = (fuselage_fc / sigma_bend_fuselage) - 1;
@@ -156,6 +175,12 @@ tau_gear = 1.5 * P_trans / A_strut_min;
 
 % Max normal stress
 sigma_total_gear = sigma_bend_gear + sigma_comp_gear;
+
+% Store stresses [MPa]
+params.structures.sigma_bend_gear = sigma_bend_gear / 1e6;
+params.structures.sigma_comp_gear = sigma_comp_gear / 1e6;
+params.structures.tau_gear = tau_gear / 1e6;
+params.structures.sigma_total_gear = sigma_total_gear / 1e6;
 
 % Gear margins
 params.structures.MoS_gear_normal = (gear_fty / sigma_total_gear) - 1;
