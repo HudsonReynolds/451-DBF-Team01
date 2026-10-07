@@ -56,8 +56,10 @@ end
 fprintf('\n--- Cruise Performance (Deliverable 4) ---\n');
 fprintf('  Maximum level speed (refined model): %.2f m/s  (A8''s PropulsionSizing.m estimate: %.2f m/s)\n', V_max_level, V_max_level_A8);
 if abs(V_max_level - V_max_level_A8) > 0.5
-    fprintf('  >>> FINDING: refined V_max_level differs from the one A8''s V_NE check already used by %.2f m/s -- A8 ran earlier in Main.m with the older value.\n', ...
+    fprintf('  >>> NOTE: this refined V_max_level differs from PropulsionSizing.m''s crude single-point estimate by %.2f m/s.\n', ...
         V_max_level - V_max_level_A8);
+    fprintf('      RESOLVED: Main.m now runs a suppressed preview of this pipeline stage right after PropulsionSizing.m,\n');
+    fprintf('      before A8 Structures, so VnDiagram.m''s V_NE check already uses this refined value, not the crude one.\n');
 end
 params.performance.V_max_level_A8 = V_max_level_A8; % kept for Deliverable 7's assumption-validation table, since the next line overwrites the original
 params.performance.V_max_level = V_max_level; % update for anything that runs after this point
