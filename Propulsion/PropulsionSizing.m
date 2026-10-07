@@ -75,6 +75,7 @@ good = ~isnan(diff);
 V_max = interp1(diff(good), V_range(good), 0);
 T_V_max = interp1(V_range, T_total(4,:), V_max);
 params.performance.V_max_level = V_max; % max level speed [m/s], needed by the A8 V-n diagram's V_NE check
+params.performance.V_max_level_A8_analytic = V_max; % permanent snapshot of THIS estimate, never overwritten -- Main.m now re-runs CruisePerformance.m early (before Structures) to refresh V_max_level itself with the refined value, which would otherwise corrupt CruisePerformance.m's own "A8 analytic vs A9 refined" comparison on its second, real run
 params.performance.T_static_design = T_static; % required static thrust [N] this sizing targeted, needed by A9 Deliverable 7's take-off-thrust comparison
 
 %% Plots
