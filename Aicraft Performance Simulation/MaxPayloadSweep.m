@@ -262,7 +262,7 @@ xlim_pad = [0, W_pay_at_MTOWcap*1.03];
 figure('Name','Maximum Payload Sweep','Color','w','WindowStyle','docked');
 
 local_panel(1, W_pay_grid, G.S_TO, S_TO_LIMIT, 'Ground roll (m)', 'Ground roll vs RFP limit', W_pay_max, W_pay_at_MTOWcap, blue, red, gray, purple, [], xlim_pad, 'Ground roll', 'RFP limit, R1 (25 m)');
-local_panel(2, W_pay_grid, G.V_S, V_S_LIMIT, 'Stall speed (m/s)', 'Stall speed vs landing limit*', W_pay_max, W_pay_at_MTOWcap, blue, red, gray, purple, [], xlim_pad, 'Stall speed', 'Landing limit*');
+local_panel(2, W_pay_grid, G.V_S, V_S_LIMIT, 'Stall speed (m/s)', 'Stall speed vs landing limit', W_pay_max, W_pay_at_MTOWcap, blue, red, gray, purple, [], xlim_pad, 'Stall speed', 'Landing limit');
 local_panel(3, W_pay_grid, G.ROC_max, 0, 'Max rate of climb (m/s)', 'Max ROC vs 0 (climb feasibility)', W_pay_max, W_pay_at_MTOWcap, blue, red, gray, purple, [], xlim_pad, 'Max ROC', 'Cannot climb (0)');
 local_panel(4, W_pay_grid, G.CL_turn, NaN, 'Turn C_L (-)', 'Turn CL vs stall-margined limit', W_pay_max, W_pay_at_MTOWcap, blue, red, gray, purple, G.CL_limit, xlim_pad, 'Turn CL', 'Stall-margined limit (CL_R)');
 
@@ -280,9 +280,6 @@ local_panel(8, W_pay_grid, G.I_peak, I_CAP, 'Peak current (A)', 'Peak current vs
 
 sgtitle(sprintf('Maximum payload %.3f kg (%d cubes), set by: %s', W_pay_max, n_cubes, binding_name), ...
     'FontWeight', 'bold', 'FontSize', 13);
-annotation('textbox', [0.01 0.0 0.98 0.035], 'String', ...
-    sprintf('* landing speed limit = %.1f m/s (%.2fx baseline stall speed) is an ASSUMPTION -- no real requirement exists yet.', V_S_LIMIT, LANDING_SPEED_RATIO), ...
-    'EdgeColor', 'none', 'FontSize', 8, 'Color', [0.4 0.4 0.4], 'VerticalAlignment', 'bottom');
 
 %% ---- Plot: MTOM vs payload (weight growth and the MTOW cap) ----
 figure('Name','Maximum Payload Weight Growth','Color','w','WindowStyle','docked');
