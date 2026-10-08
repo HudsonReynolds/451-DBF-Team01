@@ -112,7 +112,7 @@ wall_thick_fuselage = params.geometry.wall_thick_fuselage;
 
 % Material properties (Plywood)
 fuselage_fc = params.materials.fc_plywood * 10^6; 
-fuselage_fs = params.materials.fs_plywood * 10^6; 
+fuselage_fs = params.materials.fs_panel_plywood * 10^6; 
 
 % Inner dimensions and moment of inertia
 width_fuselage_in = width_fuselage_out - 2*wall_thick_fuselage;
@@ -173,15 +173,15 @@ sigma_comp_gear = P_axial / A_strut_min;
 % Max shear stress
 tau_gear = 1.5 * P_trans / A_strut_min;
 
-% Max normal stress
-sigma_total_gear = sigma_bend_gear + sigma_comp_gear;
-
 % Store stresses [MPa]
 params.structures.sigma_bend_gear = sigma_bend_gear / 1e6;
 params.structures.sigma_comp_gear = sigma_comp_gear / 1e6;
 params.structures.tau_gear = tau_gear / 1e6;
-params.structures.sigma_total_gear = sigma_total_gear / 1e6;
 
 % Gear margins
-params.structures.MoS_gear_normal = (gear_fty / sigma_total_gear) - 1;
+sigma_vm_gear_outer = sigma_bend_gear + sigma_comp_gear;              
+sigma_vm_gear_NA = sqrt(sigma_comp_gear^2 + 3 * tau_gear^2);          
+sigma_vm_gear = max(sigma_vm_gear_outer, sigma_vm_gear_NA);
+
+params.structures.MoS_gear_vm = (gear_fty / sigma_vm_gear) - 1;
 params.structures.MoS_gear_shear = (gear_fsu / tau_gear) - 1;

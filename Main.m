@@ -54,41 +54,45 @@ VnOperatingEnvelope(params);
 
 [~, params] = TailDraggerTakeOff(params);
 
-fprintf('\n========================================\n');
-fprintf('  AIRCRAFT PERFORMANCE (A9, Deliverables 1-5)\n');
-fprintf('========================================\n');
+params = StressMargins(params);
 
-[~, params] = PropulsionDragModel(params);
-
-[~, params] = TakeoffPerformance(params);
-
-[~, params] = ClimbPerformance(params);
-
-[~, params] = CruisePerformance(params);
-
-[~, params] = TurnPerformance(params);
-
-fprintf('\n========================================\n');
-fprintf('  AIRCRAFT PERFORMANCE (A9, Deliverables 6-9)\n');
-fprintf('========================================\n');
-
-[~, params] = MissionSimulation(params);
-
-[~, params] = AssumptionValidation(params);
-
-[~, params] = MaxPayloadSweep(params);
-
-[~, params] = RequirementsValidation(params);
+params = Joints(params);
 % 
-% Save every figure generated above into Plots/, replacing whatever was
-% there before -- so Plots/ always matches exactly this run's figures.
-% ExportAllFigures('Plots');
-
-writeOutputs(params, "SizingParams.xlsx");
-
-% <<<<<<< Updated upstream
-% =======
+% fprintf('\n========================================\n');
+% fprintf('  AIRCRAFT PERFORMANCE (A9, Deliverables 1-5)\n');
+% fprintf('========================================\n');
+% 
+% [~, params] = PropulsionDragModel(params);
+% 
+% [~, params] = TakeoffPerformance(params);
+% 
+% [~, params] = ClimbPerformance(params);
+% 
+% [~, params] = CruisePerformance(params);
+% 
+% [~, params] = TurnPerformance(params);
+% S
+% fprintf('\n========================================\n');
+% fprintf('  AIRCRAFT PERFORMANCE (A9, Deliverables 6-9)\n');
+% fprintf('========================================\n');
+% 
+% [~, params] = MissionSimulation(params);
+% 
+% [~, params] = AssumptionValidation(params);
+% 
+% [~, params] = MaxPayloadSweep(params);
+% 
+% [~, params] = RequirementsValidation(params);
+% % 
 % % Save every figure generated above into Plots/, replacing whatever was
 % % there before -- so Plots/ always matches exactly this run's figures.
 % % ExportAllFigures('Plots');
-% >>>>>>> Stashed changes
+% 
+writeOutputs(params, "SizingParams.xlsx");
+% 
+% % <<<<<<< Updated upstream
+% % =======
+% % % Save every figure generated above into Plots/, replacing whatever was
+% % % there before -- so Plots/ always matches exactly this run's figures.
+% % % ExportAllFigures('Plots');
+% % >>>>>>> Stashed changes

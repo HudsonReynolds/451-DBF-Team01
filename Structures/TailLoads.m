@@ -226,6 +226,7 @@ params.structures.horizontal_tail_T_root = T_h(1);
 params.structures.fin_M_root   = M_fin(1);
 params.structures.tailcone_T   = T_tailcone;
 params.structures.tailcone_Ml  = M_l_tailcone;
+params.structures.tailcone_V = Yv;
 
 end
 
