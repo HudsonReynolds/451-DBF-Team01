@@ -12,6 +12,7 @@ washer_area = 0.25 * pi * (washer_OD^2 - washer_ID^2);
 
 % Aluminum tubes
 wall_thick_tube = params.geometry.wall_thick_spar;
+width_tail_boom = params.geometry.width_tail_boom;
 
 % Plywood
 wall_thick_fuselage = params.geometry.wall_thick_fuselage;
@@ -49,26 +50,26 @@ params.structures.MoS_wing_joint = (fs_panel_plywood / tau) - 1;
 
 % Loads
 ult_factor = 1.5;
-M_tail_boom_ult = abs(params.structures.tailcone_Ml) * ult_factor;
-length_tail_boom = params.geometry.length_tail_boom; % Boom length that sticks out of fuselage
-P_boom_joint = M_tail_boom_ult / length_tail_boom;
+V_tail_boom_ult = abs(params.structures.tailcone_V) * ult_factor;
+T_tail_boom_ult = abs(params.structures.tailcone_T) * ult_factor;
+P_boom = V_tail_boom_ult + T_tail_boom_ult / width_tail_boom;
 
 % Stress
 bearing_area = 2 * wall_thick_tube * bolt_OD;
-sigma_br = P_boom_joint / bearing_area;
+sigma_br = P_boom / bearing_area;
 
-% Margins
+% MargiV
 params.structures.MoS_boom_joint = (fbry_al_6061_t6 / sigma_br) - 1;
 
 %% Motor to firewall
 
 % Loads
-T_static = params.prop.T_static_actual;
+T_static_ult = params.prop.T_static_actual * ult_factor;
 
 % Stress
 no_bolts = 4;
-load_area = no_bolts * washer_area;
-tau = T_static / load_area;
+shear_area = no_bolts * pi * bolt_OD * wall_thick_fuselage;
+tau = T_static_ult / shear_area;
 
 % Margins
 params.structures.MoS_motor_mount = (fs_panel_plywood / tau) - 1;
@@ -83,9 +84,9 @@ V_landing = mu_L * F_landing_ult;
 % Stress
 no_bolts = 4;
 bearing_area = no_bolts * wall_thick_fuselage * bolt_OD;
-tau = V_landing / bearing_area;
+sigma_br = V_landing / bearing_area;
 
 % Margins
-params.structures.MoS_gear_mount = (fs_planar_plywood / tau) - 1;
+params.structures.MoS_gear_mount = (fs_planar_plywood / tau) - 1; % Probaly wrong strength to compare, idk what bearing strength is
 
 end
