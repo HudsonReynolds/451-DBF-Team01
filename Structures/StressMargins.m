@@ -49,7 +49,7 @@ sigma_vm_spar = sqrt(sigma_bend_spar^2 + 3 * tau_torsion_spar^2);
 % Max shear stress on one side wall
 tau_spar_max = tau_shear_spar + tau_torsion_spar;
 
-% Store stresses [MPa]
+% Store stresses
 params.structures.sigma_bend_spar = sigma_bend_spar / 1e6;
 params.structures.tau_shear_spar = tau_shear_spar / 1e6;
 params.structures.tau_torsion_spar = tau_torsion_spar / 1e6;
@@ -65,15 +65,22 @@ params.structures.MoS_spar_shear = (spar_fsu / tau_spar_max) - 1;
 width_tail_boom_out = params.geometry.width_tail_boom;
 height_tail_boom_out = params.geometry.width_tail_boom;
 wall_thick_tail_boom = params.geometry.wall_thick_tail_boom;
+length_tail_boom = params.geometry.length_tail_boom;
 
 % Material properties (AL 6061-T6)
 tail_boom_fty = params.materials.fty_al_6061_t6 * 10^6;
 tail_boom_fsu = params.materials.fsu_al_6061_t6 * 10^6;
+E_tail_boom = params.materials.E_al_6061_t6 * 10^6;
 
 % Inner dimensions and moment of inertia
 width_tail_boom_in = width_tail_boom_out - 2*wall_thick_tail_boom;
 height_tail_boom_in = height_tail_boom_out - 2*wall_thick_tail_boom;
 I_tail_boom = (width_tail_boom_out * height_tail_boom_out^3)/12 - (width_tail_boom_in * height_tail_boom_in^3)/12;
+
+% Tail deflection
+V_tail_boom = V_tail_boom_ult / ult_factor;
+params.structures.tail_def_angle = rad2deg((V_tail_boom * length_tail_boom^2) / (2 * E_tail_boom * I_tail_boom));
+params.structures.tail_def = (V_tail_boom * length_tail_boom^3) / (3 * E_tail_boom * I_tail_boom);
 
 % Bending stress
 y_max_tail_boom = height_tail_boom_out / 2;
@@ -93,7 +100,7 @@ sigma_vm_tail_boom = sqrt(sigma_bend_tail_boom^2 + 3 * tau_torsion_tail_boom^2);
 % Max shear stress on one side wall
 tau_tail_boom_max = tau_shear_tail_boom + tau_torsion_tail_boom;
 
-% Store stresses [MPa]
+% Store stresses
 params.structures.sigma_bend_tail_boom = sigma_bend_tail_boom / 1e6;
 params.structures.tau_shear_tail_boom = tau_shear_tail_boom / 1e6;
 params.structures.tau_torsion_tail_boom = tau_torsion_tail_boom / 1e6;
@@ -173,7 +180,7 @@ sigma_comp_gear = P_axial / A_strut_min;
 % Max shear stress
 tau_gear = 1.5 * P_trans / A_strut_min;
 
-% Store stresses [MPa]
+% Store stresses
 params.structures.sigma_bend_gear = sigma_bend_gear / 1e6;
 params.structures.sigma_comp_gear = sigma_comp_gear / 1e6;
 params.structures.tau_gear = tau_gear / 1e6;
