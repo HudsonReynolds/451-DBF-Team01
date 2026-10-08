@@ -21,6 +21,10 @@ wall_thick_fuselage = params.geometry.wall_thick_fuselage;
 width_tail_mount = params.geometry.width_tail_mount;
 wall_thick_tail_mount = params.geometry.wall_thick_tail_mount;
 
+% Gear
+height_gear = params.geometry.main_gear_len + 0.5*params.geometry.main_wheel_dia;
+gear_bolt_space = .02;
+
 %% Material properties
 % Plywood
 fs_panel_plywood = params.materials.fs_panel_plywood * 10^6; % For shear perpendicular to plys
@@ -94,14 +98,16 @@ tau = T_static_ult / shear_area;
 params.structures.MoS_motor_mount = (fs_panel_plywood / tau) - 1;
 
 %% Landing gear
-
+% Bolt tear out from landing load applied as moment to hear
 % Loads
 F_landing_ult = abs(params.structures.landing_F_main) * ult_factor;
+M_landing_ult = F_landing_ult * height_gear;
+F_landing_bolts = M_landing_ult / gear_bolt_space;
 
 % Stress
 no_bolts = 4;
 bearing_area = no_bolts * pi * washer_OD * wall_thick_fuselage;
-sigma_br = F_landing_ult / bearing_area;
+sigma_br = F_landing_bolts / bearing_area;
 
 % Margins
 params.structures.MoS_gear_mount = (fs_panel_plywood / sigma_br) - 1;
