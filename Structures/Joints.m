@@ -37,13 +37,11 @@ no_bolts_plywood = 4;
 load_per_bolt = V_wing_ult / (no_bolts_al + no_bolts_plywood);
 
 % Stress
-tau = load_per_bolt / washer_area;
+shear_area = pi * washer_OD * wall_thick_fuselage;
+tau = load_per_bolt / shear_area;
 
 % Margins
-MoS_al = (fsu_al_6061_t6 / tau) - 1;
-MoS_plywood = (fs_panel_plywood / tau) - 1;
-
-params.structures.MoS_wing_joint = min(MoS_al, MoS_plywood);
+params.structures.MoS_wing_joint = (fs_panel_plywood / tau) - 1;
 
 %% Tail boom joint
 % Only evaluating bolts at boom split (sees worst loads)
@@ -57,10 +55,10 @@ P_boom_joint = M_tail_boom_ult / length_tail_boom;
 
 % Stress
 bearing_area = 2 * wall_thick_tube * bolt_OD;
-tau = P_boom_joint / bearing_area;
+sigma_br = P_boom_joint / bearing_area;
 
 % Margins
-params.structures.MoS_boom_joint = (fbry_al_6061_t6 / tau) - 1;
+params.structures.MoS_boom_joint = (fbry_al_6061_t6 / sigma_br) - 1;
 
 %% Motor to firewall
 
