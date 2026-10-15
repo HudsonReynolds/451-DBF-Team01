@@ -178,19 +178,10 @@ fprintf('  9. Motor electrical constants (Kv, I0, R_motor): attempted lab calibr
 fprintf('     the bench logs battery-side Voltage/Current (voltage RISES as throttle drops, i.e. battery\n');
 fprintf('     internal-resistance sag, not motor back-EMF -- these are not motor-phase values), and there is no\n');
 fprintf('     logged ESC duty-cycle channel to convert one to the other.\n');
-% The two fitted R_motor/I0 values below are a one-time regression result
-% against the lab bench data (a fixed dataset, not re-fit every run -- see
-% the Word doc for the full derivation); only the "Xx off nameplate"
-% comparison is computed live here, so it can't go stale if the team
-% updates the nameplate Kv/I0/R_motor cells later (as already happened
-% once this session).
-R_fit_A = 0.242; I0_fit_B = 6.70; % ohm, A -- the one-time fitted values themselves
-fprintf('       Attempt A (raw battery V/I as motor V/I):            R_motor fit = %.3f ohm  (nameplate %.3f ohm, %.1fx off)\n', ...
-    R_fit_A, params.prop.R_motor, R_fit_A/params.prop.R_motor);
+fprintf('       Attempt A (raw battery V/I as motor V/I):            R_motor fit = 0.242 ohm  (nameplate 0.029 ohm, 8x off)\n');
 fprintf('                                                              I0 fit = -6.01 A  (negative -- physically impossible)\n');
 fprintf('       Attempt B (duty-corrected, assumed std. 1000-2000us): R_motor fit = -0.011 ohm (negative -- physically impossible)\n');
-fprintf('                                                              I0 fit = %.2f A   (nameplate %.2f A, %.1fx off)\n', ...
-    I0_fit_B, params.prop.I0, I0_fit_B/params.prop.I0);
+fprintf('                                                              I0 fit = 6.70 A   (nameplate 1.39 A, 5x off)\n');
 fprintf('     Both attempts fit the torque-vs-current data well (R^2 > 0.99) but the voltage equation is unidentifiable\n');
 fprintf('     from battery-side-only telemetry -- nameplate Kv=%.0f RPM/V, I0=%.2f A, R_motor=%.3f ohm are kept.\n', ...
     params.prop.Kv, params.prop.I0, params.prop.R_motor);

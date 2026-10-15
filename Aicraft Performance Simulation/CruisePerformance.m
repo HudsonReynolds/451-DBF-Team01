@@ -42,17 +42,7 @@ else
     V_max_level = interp1(diff_T(i_cross:i_cross+1), V_sweep(i_cross:i_cross+1), 0);
 end
 
-% The permanent snapshot (PropulsionSizing.m) rather than the live
-% params.performance.V_max_level -- Main.m now runs this script twice
-% (once early, suppressed, just to refresh V_max_level before Structures
-% needs it; once for real, here). Reading the live field would make the
-% second run compare its own first-run output against itself instead of
-% against A8's actual coarse estimate.
-if isfield(params.performance, 'V_max_level_A8_analytic')
-    V_max_level_A8 = params.performance.V_max_level_A8_analytic;
-else
-    V_max_level_A8 = params.performance.V_max_level; % fallback if PropulsionSizing.m hasn't run / is an older version
-end
+V_max_level_A8 = params.performance.V_max_level; % the coarser, V-independent-RPM estimate PropulsionSizing.m made (A7/A8)
 fprintf('\n--- Cruise Performance (Deliverable 4) ---\n');
 fprintf('  Maximum level speed (refined model): %.2f m/s  (A8''s PropulsionSizing.m estimate: %.2f m/s)\n', V_max_level, V_max_level_A8);
 if abs(V_max_level - V_max_level_A8) > 0.5

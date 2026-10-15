@@ -96,7 +96,7 @@ av  = params.aero.CL_Alpha_VT;
 tau_r = params.aero.tau_r;
 delta_r_max = deg2rad(params.geometry.delta_r_limit);
 D_fus = params.structures.D_fus_tail;
-l_tc  = params.geometry.l_t; 
+l_tc  = params.geometry.length_tail_boom; 
 
 Yv_linear_fn = @(V) 0.5*rho*V.^2*S_v*eta_v*av*tau_r*delta_r_max;
 Yv_stall_fn  = @(V) 0.5*rho*V.^2*S_v*eta_v*CL_max_tail;
@@ -226,7 +226,7 @@ params.structures.horizontal_tail_T_root = T_h(1);
 params.structures.fin_M_root   = M_fin(1);
 params.structures.tailcone_T   = T_tailcone;
 params.structures.tailcone_Ml  = M_l_tailcone;
-params.structures.tailcone_V   = Yv;
+params.structures.tailcone_V = Yv;
 
 end
 
