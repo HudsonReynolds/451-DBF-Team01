@@ -1,0 +1,120 @@
+VirtualTwin ArduPilot and FlightGear Aircraft
+Author: Spencer Jones
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+NAMES
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+aircraftName = "Team01"                        # name of aircraft
+joystickName = "OpenTX FrSky Taranis Joystick" # name of transmitter
+motorName    = "C-3520/10"                     # motor name
+propName     = "10x7E"                         # propeller name
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+MOTOR
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+maxRPM_Motor     = 11017     # maximum motor RPM
+maxVolts_Motor   = 16.18     # maximum motor volts (based on battery)
+kv_Motor         = 980       # kV rating of the motor
+resistance_Motor = 0.025     # resistance of the motor in Ohms
+current_Motor    = 1.84      # no load current of the motor in Amps
+positionX_Motor  = 0.0245    # x-axis position of the motor in m                         
+positionY_Motor  = 0.0       # y-axis position of the motor in m (positive value)        
+positionZ_Motor  = 0.0       # z-axis position of the motor in m                         
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+FLIGHT CONDITIONS & GENERAL
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+mach     = 0.067   # mach number
+cD0      = 0.0313  # aircraft parasitic drag coefficient                               
+cLTrim   = 0.237  # lift coefficient of the trimmed aircraft (in cruise) 
+cL0      = 0.43   # lift coefficient of the aircraft at zero degrees angle of attack
+cm0      = -0.08  # moment coefficient of the aircraft at zero degrees angle of attack
+alphaMax = 19     # angle of attack at cLMax
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+CAD VALUES
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+mass          = 3.79         # mass of the aircraft in kg
+ixx           = 0.217        # xx moment of inertia in kg*m^2 TODO
+iyy           = 0.153        # yy moment of inertia in kg*m^2 TODO
+izz           = 0.351        # zz moment of inertia in kg*m^2 TODO
+ixy           = 0.000527     # xy moment of inertia in kg*m^2 TODO
+ixz           = 0.000606     # xz moment of inertia in kg*m^2 TODO
+iyz           = 0.0142       # yz moment of inertia in kg*m^2 TODO
+percentMAC_CG = 0.161        # location of the aircraft center of gravity behind the wing leading edge divided by the wing mean aerodynamic chord
+cgY           = -0.002746    # y-axis position of the center of gravity in m                                                                 
+cgZ           = 0            # z-axis position of the center of gravity in m                                                                 
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+WING
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+area_Wing             = 0.474  # area of the wing in m^2
+mac_Wing              = 0.316  # mean aerodynamic chord of the wing in m
+span_Wing             = 1.5    # span of the wing in m
+aspectRatio_Wing      = 4.75   # aspect ratio of the wing
+rootChord_Wing        = 0.316  # root chord length of the wing
+taperRatio_Wing       = 1      # taper ratio of the wing
+sweep_Wing            = 0      # sweep angle at quarter chord of the wing in degrees
+dihedral_Wing         = 5      # dihedral angle of the wing in degrees
+percentMAC_AC         = 0.25   # location of the aircraft aerodynamic center behind the wing leading edge divided by the wing mean aerodynamic chord
+positionX_Wing        = 0.317  # x-axis distance of the wing LE in m                      
+positionZ_Wing        = 0.03   # z-axis position of the wing LE in m                      
+oswaldEfficiency      = 0.9258 # oswald efficiency factor of the wing                     
+start_Aileron         = 0.7    # percent of wing half span where the aileron starts
+end_Aileron           = 1      # percent of wing half span where the aileron ends
+chordPercent_Aileron  = 0.25   # percent chord of the wing that is the aileron
+minDeflection_Aileron = -15    # minimum deflection angle of the aileron in deg
+maxDeflection_Aileron = 15     # maximum deflection angle of the aileron in deg
+airfoilScale_Wing     = 1.0    # ratio of the wing airfoil lift curve slope to 2*pi
+heightParameter_Wing  = -0.5   # wing height on the fuselage parameter: 0.5 for Low, 0.0 for Mid, -0.5 for High
+rollParameter_Wing    = -0.017 # wing position parameter for roll: 0.008 for Low, 0.0 for Mid, -0.017 for High
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+HORIZONTAL TAIL
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+area_HTail             = 0.081  # area of the h-tail in m^2
+aspectRatio_HTail      = 2.5    # aspect ratio of the h-tail
+sweep_HTail            = 0.0    # sweep angle at quarter chord of the h-tail in degrees
+efficiency_HTail       = 0.65   # efficiency factor of the h-tail
+armLength_HTail        = 0.8    # distance from the wing quarter chord to the h-tail quarter chord   
+start_Elevator         = 0.0    # percent of h-tail span where the elevator starts
+end_Elevator           = 1.0    # percent of h-tail span where the elevator ends
+chordPercent_Elevator  = 0.3    # percent chord of the h-tail that is the elevator
+minDeflection_Elevator = -30    # minimum deflection angle of the elevator in deg
+maxDeflection_Elevator = 30     # maximum deflection angle of the elevator in deg
+airfoilScale_HTail     = 1.0    # ratio of the h-tail airfoil lift curve slope to 2*pi
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+VERTICAL TAIL
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+area_VTail           = 0.04   # area of the h-tail in m^2
+aspectRatio_VTail    = 1.17   # aspect ratio of the v-tail
+sweep_VTail          = 0.0    # sweep angle at quarter chord of the v-tail in degrees
+efficiency_VTail     = 0.95   # efficiency factor of the v-tail
+armLength_VTail      = 0.8    # distance from the wing quarter chord to the v-tail quarter chord
+z_VTail              = 0.017  # z-axis position of the v-tail aerodynamic center in m                  
+start_Rudder         = 0.0    # percent of v-tail span where the rudder starts
+end_Rudder           = 1.0    # percent of v-tail span where the rudder ends
+chordPercent_Rudder  = 0.30   # percent chord of the v-tail that is the rudder
+minDeflection_Rudder = -30    # minimum deflection angle of the rudder in deg
+maxDeflection_Rudder = 30     # maximum deflection angle of the rudder in deg
+airfoilScale_VTail   = 1.0    # ratio of the v-tail airfoil lift curve slope to 2*pi
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+FUSELAGE
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+length_Fuselage = 1.343    # length of the fuselage in m                                                    
+height_Fuselage = 0.09     # height of the fuselage in m                                                    
+width_Fuselage  = 0.08     # width of the fuselage in m                                                    
+volume_Fuselage = 0.00372  # volume of the fuselage in m^3                                                 
+factor_Fuselage = 0.01     # pitch aero coefficient fuselage factor                                        
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+LANDING GEAR
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+height_MainGear       = 0.1458 # height of the main gear in m                                             
+width_MainGear        = 0.392  # width of the main gear in m                                              
+positionX_MainGear    = 0.2774 # x-axis position of the main gear in m                                    
+height_ThirdWheel     = 0.111  # height ot he third wheel in m                                            
+positionX_ThirdWheel  = 1.282  # x-axis position of the third wheel in m                                  
+steerAngle_ThirdWheel = 30     # maximum steer angle of the third wheel in deg                            
