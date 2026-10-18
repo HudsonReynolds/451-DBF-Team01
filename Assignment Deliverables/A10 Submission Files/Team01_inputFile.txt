@@ -34,14 +34,14 @@ alphaMax = 19     # angle of attack at cLMax
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 CAD VALUES
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-mass          = 3.79         # mass of the aircraft in kg
-ixx           = 0.217        # xx moment of inertia in kg*m^2 TODO
-iyy           = 0.153        # yy moment of inertia in kg*m^2 TODO
-izz           = 0.351        # zz moment of inertia in kg*m^2 TODO
-ixy           = 0.000527     # xy moment of inertia in kg*m^2 TODO
-ixz           = 0.000606     # xz moment of inertia in kg*m^2 TODO
-iyz           = 0.0142       # yz moment of inertia in kg*m^2 TODO
-percentMAC_CG = 0.161        # location of the aircraft center of gravity behind the wing leading edge divided by the wing mean aerodynamic chord
+mass          = 3.79          # mass of the aircraft in kg
+ixx           = 0.1559        # xx moment of inertia in kg*m^2 
+iyy           = 0.2333        # yy moment of inertia in kg*m^2 
+izz           = 0.3683        # zz moment of inertia in kg*m^2 
+ixy           = -0.00108      # xy moment of inertia in kg*m^2 
+ixz           = 0.01597       # xz moment of inertia in kg*m^2 
+iyz           = -0.0013       # yz moment of inertia in kg*m^2 
+percentMAC_CG = 0.161         # location of the aircraft center of gravity behind the wing leading edge divided by the wing mean aerodynamic chord
 cgY           = -0.002746    # y-axis position of the center of gravity in m                                                                 
 cgZ           = 0            # z-axis position of the center of gravity in m                                                                 
 
@@ -115,6 +115,6 @@ LANDING GEAR
 height_MainGear       = 0.1458 # height of the main gear in m                                             
 width_MainGear        = 0.392  # width of the main gear in m                                              
 positionX_MainGear    = 0.2774 # x-axis position of the main gear in m                                    
-height_ThirdWheel     = 0.111  # height ot he third wheel in m                                            
+height_ThirdWheel     = 0.111  # height to he third wheel in m                                            
 positionX_ThirdWheel  = 1.282  # x-axis position of the third wheel in m                                  
 steerAngle_ThirdWheel = 30     # maximum steer angle of the third wheel in deg                            
