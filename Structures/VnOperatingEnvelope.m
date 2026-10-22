@@ -8,12 +8,9 @@ CL_max_neg = params.aero.CL_max_neg;
 rho    = params.env.rho;
 g      = params.env.g;
 
-% Mass table is the source of truth for structural analysis (team
-% decision, same convention WingLoads.m/TailLoads.m/FuselageLoads.m/
-% TailDraggerTakeOff.m/VnDiagram.m already use): use its own sum as the
-% aircraft weight here, not the iterated params.performance.MTOW.
-massTable = readtable('SizingParams.xlsx', 'Sheet', 'MassBudget');
-MTOW = sum(massTable.Mass_g)/1000 * g; % N
+% As-built (measured) mass from the Inputs sheet, same as VnDiagram.m and
+% the other structural scripts.
+MTOW = params.performance.MTOW; % N
 
 % Self-consistent stall speed (same formula as VnDiagram.m and as
 % V_S_neg below) -- keeps the stall boundary flush with the limit-load-

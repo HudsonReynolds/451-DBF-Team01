@@ -1,7 +1,11 @@
 function params = InitialCalcs(params)
 
+%% Weight and wing loading
+params.performance.MTOW = params.env.g * params.performance.MTOM; % Takeoff weight [N]
+params.performance.W_S = params.performance.MTOW / params.geometry.S_wing; % Wing loading, hardcoded wing area (Inputs sheet) [N/m^2]
+
 %% Speeds and flight conditions
-params.performance.V_C = sqrt(2*params.performance.W_S_design / (params.env.rho*params.aero.CL_C)); % Cruise speed from design CL_C [m/s]
+params.performance.V_C = sqrt(2*params.performance.W_S / (params.env.rho*params.aero.CL_C*params.aero.k_dihedral)); % Cruise speed from design CL_C, dihedral knockdown [m/s]
 params.performance.V_TO = params.performance.mult_V_TO * params.performance.V_S; % Takeoff speed [m/s]
 params.performance.V_M = sqrt(params.performance.R_M * params.env.g * sqrt(params.performance.n^2 - 1)); % Maneuver speed for turn radius R_M [m/s]
 params.performance.V_S_M = params.performance.V_S * sqrt(params.performance.n); % Stall speed at load factor n [m/s]
@@ -12,9 +16,7 @@ params.performance.gamma = atand(params.performance.climb_alt / params.performan
 params.aero.CL_TO = params.aero.CL_C; % Takeoff CL before rotation, no flaps, same as cruise [-]
 params.aero.CL_R = params.aero.CL_max / params.performance.mult_V_TO^2; % Rotation CL [-]
 
-%% Weight and wing
-params.performance.MTOW = params.env.g * params.performance.MTOM; % Takeoff weight [N]
-params.geometry.S_wing = params.performance.MTOW / params.performance.W_S_design; % Wing area from design wing loading [m^2]
+%% Wing
 params.geometry.c_wing = params.geometry.S_wing / (params.geometry.wingspan - params.geometry.width_fuselage); % Wing chord, area excludes fuselage section [m]
 params.geometry.AR = params.geometry.wingspan / params.geometry.c_wing; % Wing aspect ratio [-]
 params.aero.e_wing = 1.78*(1 - 0.045*params.geometry.AR^0.68) - 0.64; % Oswald efficiency, Sadraey eqn 5.27a [-]

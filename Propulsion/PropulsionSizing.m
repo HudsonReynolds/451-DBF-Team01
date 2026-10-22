@@ -76,6 +76,8 @@ V_max = interp1(diff(good), V_range(good), 0);
 T_V_max = interp1(V_range, T_total(4,:), V_max);
 params.performance.V_max_level = V_max; % max level speed [m/s], needed by the A8 V-n diagram's V_NE check
 params.performance.T_static_design = T_static; % required static thrust [N] this sizing targeted, needed by A9 Deliverable 7's take-off-thrust comparison
+params.prop.RPM_max = RPM_max; % 100% throttle RPM, needed by PropellerCharacterization.m so its curves use the same shaft speeds as these plots
+params.prop.throttle_settings = throttle_settings; % throttle as a fraction of RPM_max
 
 %% Plots
 clr = [0.00 0.45 0.74;   % blue   – 25%
@@ -105,7 +107,7 @@ plot(V_max, T_V_max, 'r*');
 text(V_max-0.5, T_V_max+0.5, 'Max level speed', 'FontSize', 10, 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
 
 xlabel('Airspeed [m/s]'); ylabel('Thrust [N]'); title('Thrust vs. Airspeed'); ylim([0, 35]);
-legend({'25%','50%','75%','100%', 'Drag'}, 'Location','northeast');
+legend({'25\%','50\%','75\%','100\%', 'Drag'}, 'Location','northeast'); % \% because legends use the LaTeX interpreter (Setup.m), where a bare % starts a comment
 
 % Electrical power
 nexttile; hold on; box on; grid on;

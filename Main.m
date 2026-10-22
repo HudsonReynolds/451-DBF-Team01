@@ -4,7 +4,17 @@ Setup() % setup plotting & paths for everything
 
 params = readParams("SizingParams.xlsx");
 
-% Iterate between vehicle weight and aerodynamic performance
+% Dihedral knockdown: each wing panel's lift tilts by Gamma and the panel
+% sees alpha*cos(Gamma), so vertical lift capability scales by cos^2(Gamma)
+params.aero.k_dihedral = cosd(params.geometry.Gamma_dihedral_deg)^2; % Dihedral lift knockdown [-]
+params.aero.CL_max     = params.aero.k_dihedral * params.aero.CL_max; % Wing CL_max with dihedral knockdown [-]
+params.aero.CL_max_neg = params.aero.k_dihedral * params.aero.CL_max_neg; % Negative wing CL_max with dihedral knockdown [-]
+
+MTOM_actual = params.performance.MTOM; % As-built (measured) mass from the Inputs sheet [kg]
+
+% Iterate between vehicle weight and aerodynamic performance -- the wing
+% area is hardcoded (Inputs sheet), so this only gives the weight-fraction
+% mass/battery estimate; the as-built mass replaces MTOM below
 MTOM_guess = params.performance.MTOM;
 err = 1;
 
@@ -21,6 +31,15 @@ while err > 0.001
     err = abs((MTOM_guess - MTOM_new) / MTOM_guess);
     MTOM_guess = MTOM_new;
 end
+
+% As-built aircraft: use the measured mass everywhere downstream (sizing,
+% stability, propulsion, loads) with the hardcoded wing area
+fprintf('Weight-fraction estimate MTOM = %.3f kg; using as-built MTOM = %.3f kg, S = %.4f m^2\n', ...
+    params.performance.MTOM, MTOM_actual, params.geometry.S_wing);
+params.performance.MTOM = MTOM_actual;
+params = InitialCalcs(params);
+params = DragBuildUp(params);
+params = calcAero(params);
 
 fprintf('\n========================================\n');
 fprintf('  Stability (A5B)\n');

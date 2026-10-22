@@ -10,14 +10,13 @@ rho = params.env.rho;
 S = params.geometry.S_wing;
 c = params.geometry.c_wing;
 
-% Mass-Station Table -- the source of truth for structural analysis (team
-% decision): its own sum IS the aircraft weight used throughout this
-% file, matching WingLoads.m and TailLoads.m, rather than being scaled to
-% match the iterated params.performance.MTOM. The two are compared and
-% reported, not silently reconciled -- a large gap is a real finding.
-massTable = readtable('SizingParams.xlsx', 'Sheet', 'MassBudget');
-MTOM = sum(massTable.Mass_g)/1000; % kg
-MTOW = MTOM * g; % N
+% Mass-Station Table -- component stations from the MassBudget sheet,
+% scaled to sum to the as-built mass (loadMassBudget.m), so the inertia
+% loads total the same weight WingLoads.m and TailLoads.m use while the
+% CG stays where the table puts it.
+massTable = loadMassBudget(params);
+MTOM = params.performance.MTOM; % kg
+MTOW = params.performance.MTOW; % N
 x_cg_abs = sum(massTable.Mass_g .* massTable.X_m) / sum(massTable.Mass_g);
 
 x_LE_wing = params.structures.x_LE_wing;

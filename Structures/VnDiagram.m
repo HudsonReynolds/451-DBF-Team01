@@ -14,17 +14,11 @@ CL_alpha = params.aero.CL_Alpha;
 rho = params.env.rho;
 g = params.env.g;
 
-% Mass table is the source of truth for structural analysis (team
-% decision, same convention WingLoads.m/TailLoads.m/FuselageLoads.m/
-% TailDraggerTakeOff.m already use): use its own sum as the aircraft
-% weight here, not the iterated params.performance.MTOM/MTOW. This
-% matters beyond just this figure -- WingLoads.m etc. apply the load
-% factors and speeds computed here to THEIR OWN mass-table weight, so
-% deriving those speeds/factors from a different (iterated) total would
-% silently mismatch the two.
-massTable = readtable('SizingParams.xlsx', 'Sheet', 'MassBudget');
-MTOM = sum(massTable.Mass_g)/1000; % kg
-MTOW = MTOM * g; % N
+% As-built (measured) mass from the Inputs sheet -- the same weight
+% WingLoads.m/TailLoads.m/FuselageLoads.m/TailDraggerTakeOff.m use, so the
+% load factors and speeds computed here match the weight they're applied to.
+MTOM = params.performance.MTOM; % kg
+MTOW = params.performance.MTOW; % N
 
 % Self-consistent stall speed for THIS diagram's own rho/S/CL_max/MTOW
 % (same method already used below for V_S_neg) -- guarantees the stall

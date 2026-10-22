@@ -9,13 +9,10 @@ g    = params.env.g;
 S    = params.geometry.S_wing;
 c    = params.geometry.c_wing;
 
-% Mass table is the source of truth for structural analysis (team
-% decision): use its own sum as the aircraft weight here, not the
-% iterated params.performance.MTOW, so wing/tail/fuselage all size
-% against the same, consistent total.
-massTable = readtable('SizingParams.xlsx', 'Sheet', 'MassBudget');
-MTOM = sum(massTable.Mass_g)/1000; % kg
-MTOW = MTOM * g; % N
+% As-built (measured) mass from the Inputs sheet, so wing/tail/fuselage all
+% size against the same, consistent total.
+MTOM = params.performance.MTOM; % kg
+MTOW = params.performance.MTOW; % N
 
 n_pos = params.performance.n_limit_pos;
 V_A = params.performance.V_A;

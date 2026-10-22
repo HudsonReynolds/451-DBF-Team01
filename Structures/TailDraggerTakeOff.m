@@ -21,12 +21,12 @@ g   = params.env.g;
 S   = params.geometry.S_wing;
 c   = params.geometry.c_wing;
 
-% Mass table is the source of truth for structural analysis (team
-% decision): use its own sum as the aircraft weight here, same as
-% WingLoads.m, TailLoads.m and FuselageLoads.m.
-massTable = readtable('SizingParams.xlsx', 'Sheet', 'MassBudget');
-MTOM = sum(massTable.Mass_g)/1000; % kg
-MTOW = MTOM * g; % N
+% As-built (measured) mass from the Inputs sheet, same as WingLoads.m,
+% TailLoads.m and FuselageLoads.m; component stations (CG, gear, motor
+% positions) from the MassBudget sheet, scaled to that mass.
+massTable = loadMassBudget(params);
+MTOM = params.performance.MTOM; % kg
+MTOW = params.performance.MTOW; % N
 
 x_LE_wing = params.structures.x_LE_wing;
 x_ac_abs  = x_LE_wing + params.geometry.x_ac * c;
