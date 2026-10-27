@@ -1,0 +1,46 @@
+﻿
+Unigraphics NX V2007 / 2D Exchange
+
+Reading part: C:\Users\adria\AppData\Local\Temp\B_objects.prt
+
+
+Writing part: C:\Users\adria\AppData\Local\Temp\adri94CCD738kmic.prt
+
+Elapsed time   :    0 minutes,  0 seconds
+Actual CPU Time:    0 minutes,  0 seconds
+
+INFO-
+INFO-		Unigraphics Version NX V2007 to AutoCAD 2004
+INFO-		
+INFO-
+INFO-		Running UGTODXF Translator .....
+INFO-
+INFO-		Start of Translation: Tue Oct 27 11:21:44 2026
+INFO-
+STATUS-		Converting C:\Users\adria\AppData\Local\Temp\adri94CCD738kmic.prt
+STATUS-
+SUMMARY-
+SUMMARY-	Summary of Unigraphics Input Entities
+SUMMARY-	For Unigraphics File: C:\Users\adria\AppData\Local\Temp\adri94CCD738kmic.prt
+SUMMARY-	------------------------------------------------------------------
+SUMMARY-	Entity Type					Count
+SUMMARY-	------------------------------------------------------------------
+SUMMARY-	------------------------------------------------------------------
+SUMMARY-	Total ....................................:	0
+SUMMARY-	------------------------------------------------------------------
+SUMMARY-
+STATUS-
+INFO-
+INFO-		Writing File: C:\Users\adria\Downloads\0000451001-C01_B_1-DBF-T1 MAIN WING.dxf
+SUMMARY-	Summary of AutoCAD Output Entities
+SUMMARY-	------------------------------------------------------------------
+SUMMARY-	Entity Type					Count
+SUMMARY-	------------------------------------------------------------------
+SUMMARY-	Layout ...................................:	6
+SUMMARY-	------------------------------------------------------------------
+SUMMARY-	Total ....................................:	6
+SUMMARY-	------------------------------------------------------------------
+SUMMARY-
+INFO-
+INFO-		End of Translation: Tue Oct 27 11:21:44 2026
+INFO-		Translation CPU time: 0 m, 1 sINFO-
